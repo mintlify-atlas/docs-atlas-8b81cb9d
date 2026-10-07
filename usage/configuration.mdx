@@ -1,0 +1,330 @@
+---
+title: "Scoop Configuration Reference for sfsu"
+sidebarTitle: "Configuration"
+description: "sfsu reads Scoop's config.json at ~/.config/scoop/config.json. Reference for all supported fields including proxy, aria2, architecture, and paths."
+---
+
+sfsu does not maintain its own separate configuration file. Instead, it reads Scoop's existing `config.json` at startup and honours the same settings that the original Scoop PowerShell scripts recognise. This means any configuration you have already applied to Scoop — custom paths, proxy settings, architecture preferences — is automatically respected by sfsu without any extra setup.
+
+The configuration file is loaded by `Scoop::load()` from the path returned by `Scoop::get_path()`, which resolves to:
+
+```
+%USERPROFILE%\.config\scoop\config.json
+```
+
+The file is standard JSON. All fields are optional unless noted otherwise; sfsu uses sensible defaults for anything that is absent.
+
+## Minimal Configuration Example
+
+```json
+{
+  "scoop_repo": "https://github.com/ScoopInstaller/Scoop",
+  "scoop_branch": "master",
+  "default_architecture": "64bit",
+  "show_update_log": true
+}
+```
+
+## General Settings
+
+<ParamField body="use_external_7zip" type="boolean" default="false">
+  When `true`, sfsu (and Scoop) will call the `7z` executable found on `PATH` for archive extraction instead of the bundled 7-Zip. Useful if you want to use a newer or custom build of 7-Zip system-wide.
+
+  ```json
+  { "use_external_7zip": true }
+  ```
+</ParamField>
+
+<ParamField body="use_lessmsi" type="boolean" default="false">
+  When `true`, prefer the `lessmsi` utility over the native Windows `msiexec.exe` when extracting MSI packages. `lessmsi` must be installed separately (e.g. `scoop install lessmsi`).
+
+  ```json
+  { "use_lessmsi": true }
+  ```
+</ParamField>
+
+<ParamField body="no_junction" type="boolean" default="false">
+  When `true`, Scoop does not create a `current` version junction (symlink) for installed apps. Shims and shortcuts point directly to the versioned directory instead.
+
+  <Warning>
+    **sfsu will refuse to start if this setting is `true`.** Junction links are required for sfsu to resolve app paths correctly. If `no_junction` is enabled in your config, sfsu exits with the error: _"Junction links (symlinks) are required for sfsu to function currently. Please disable `no_junction` in your Scoop config."_ Disable this option or keep it unset to use sfsu.
+  </Warning>
+
+  ```json
+  { "no_junction": false }
+  ```
+</ParamField>
+
+<ParamField body="scoop_repo" type="string" default="https://github.com/ScoopInstaller/Scoop">
+  The Git repository that contains the Scoop source code. Override this to point to a custom fork or a self-hosted mirror. sfsu uses this value when it needs to interact with the Scoop installation repository.
+
+  ```json
+  { "scoop_repo": "https://github.com/ScoopInstaller/Scoop" }
+  ```
+</ParamField>
+
+<ParamField body="scoop_branch" type="string" default="master">
+  The branch of `scoop_repo` to track. Most users should leave this at `master`. Switch to `develop` if you want to test upcoming Scoop features before they are released to all users (see [issue #2939](https://github.com/ScoopInstaller/Scoop/issues/2939)).
+
+  ```json
+  { "scoop_branch": "develop" }
+  ```
+</ParamField>
+
+<ParamField body="proxy" type="string">
+  Proxy configuration for all downloads. Scoop (and sfsu) use Internet Options proxy settings with anonymous authentication by default. The field accepts the following formats:
+
+  | Value | Behaviour |
+  |---|---|
+  | `[user:pass@]host:port` | Use the specified proxy with optional credentials |
+  | `currentuser` | Use the credentials of the currently logged-in Windows user |
+  | `default` | Use the system proxy configured in Internet Options (no credentials) |
+  | `none` | Bypass the system proxy and connect directly |
+
+  An empty or absent `proxy` field is treated as `default`.
+
+  ```json
+  { "proxy": "proxy.corp.example.com:8080" }
+  ```
+</ParamField>
+
+<ParamField body="autostash_on_conflict" type="boolean" default="false">
+  When Scoop detects uncommitted changes in a bucket repository during an update, setting this to `true` causes Scoop to automatically `git stash` those changes and continue. When `false` (the default), the update is aborted instead.
+
+  ```json
+  { "autostash_on_conflict": true }
+  ```
+</ParamField>
+
+<ParamField body="default_architecture" type="string" default="System architecture">
+  The preferred CPU architecture when installing apps that provide multiple architecture-specific binaries. Accepted values are `64bit`, `32bit`, and `arm64`. If unset, the architecture is determined from the running system.
+
+  ```json
+  { "default_architecture": "64bit" }
+  ```
+</ParamField>
+
+<ParamField body="debug" type="boolean" default="false">
+  Enables additional and detailed diagnostic output from Scoop operations. This is independent of sfsu's own `--debug` CLI flag, though both can be active at the same time.
+
+  ```json
+  { "debug": true }
+  ```
+</ParamField>
+
+<ParamField body="force_update" type="boolean" default="false">
+  When `true`, forces apps to update to the version currently defined in the bucket manifest, even if the installed version appears to be the same or newer. Useful when a manifest has been corrected without a version bump.
+
+  ```json
+  { "force_update": true }
+  ```
+</ParamField>
+
+<ParamField body="show_update_log" type="boolean" default="false">
+  When `true`, Scoop displays the git commit log for each bucket after running an update, so you can see exactly what manifest changes were pulled in.
+
+  ```json
+  { "show_update_log": true }
+  ```
+</ParamField>
+
+<ParamField body="show_manifest" type="boolean" default="false">
+  When `true`, Scoop displays the full app manifest before installing and asks the user to confirm before proceeding. Provides an opportunity to review what will be installed.
+
+  ```json
+  { "show_manifest": true }
+  ```
+</ParamField>
+
+<ParamField body="shim" type="string" default="71">
+  Selects the shim implementation Scoop uses to create executable wrappers for installed apps. Available options:
+
+  | Value | Implementation |
+  |---|---|
+  | `kiennq` | [kiennq/scoop-better-shimexe](https://github.com/kiennq/scoop-better-shimexe) |
+  | `scoopcs` | C# shim implementation |
+  | `71` | Default 71-byte shim |
+
+  ```json
+  { "shim": "kiennq" }
+  ```
+</ParamField>
+
+## Paths
+
+<ParamField body="root_path" type="path" default="%USERPROFILE%\scoop">
+  The root directory of the Scoop installation. All per-user Scoop data — apps, buckets, cache (unless overridden), shims — lives under this path.
+
+  ```json
+  { "root_path": "D:\\scoop" }
+  ```
+</ParamField>
+
+<ParamField body="global_path" type="path" default="%ProgramData%\scoop">
+  The root directory for globally installed apps (those installed with `scoop install -g`). Requires administrator privileges to write to this location.
+
+  ```json
+  { "global_path": "C:\\ProgramData\\scoop" }
+  ```
+</ParamField>
+
+<ParamField body="cache_path" type="path">
+  The directory where Scoop stores downloaded installer and archive files. Defaults to the `cache` sub-directory under `root_path` when not set. Override this to keep downloads on a different drive or a shared network location.
+
+  ```json
+  { "cache_path": "D:\\scoop-cache" }
+  ```
+</ParamField>
+
+## Tokens and API Keys
+
+<ParamField body="gh_token" type="string">
+  A GitHub personal access token (PAT) used by Scoop and sfsu when making requests to the GitHub API — for example, resolving the latest release URL for an app or reading manifests in private repositories. Without a token, unauthenticated API calls are subject to GitHub's rate limits (60 requests per hour per IP).
+
+  Generate a token at [github.com/settings/tokens](https://github.com/settings/tokens). A token with no scopes is sufficient for public repository access; add `repo` scope for private repositories.
+
+  ```json
+  { "gh_token": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+  ```
+</ParamField>
+
+<ParamField body="virustotal_api_key" type="string">
+  API key for the [VirusTotal](https://www.virustotal.com/) service, used by the `sfsu scan` command (also invokable as `sfsu virustotal`) to submit and look up file hashes. Obtain a key from the [VirusTotal API documentation](https://support.virustotal.com/hc/en-us/articles/115002088769-Please-give-me-an-API-key).
+
+  ```json
+  { "virustotal_api_key": "your_virustotal_api_key_here" }
+  ```
+</ParamField>
+
+## Process and Update Behaviour
+
+<ParamField body="ignore_running_processes" type="boolean" default="false">
+  Controls how Scoop behaves when it detects that a running process belongs to an app being updated, reset, or uninstalled.
+
+  - `false` (default): abort the operation immediately if the process is running.
+  - `true`: display a warning but continue the operation anyway.
+
+  ```json
+  { "ignore_running_processes": true }
+  ```
+</ParamField>
+
+<ParamField body="hold_update_until" type="string">
+  Prevents Scoop from updating itself until the specified date. `scoop hold scoop` sets this value to one day in the future. The value must be parseable by .NET's `[System.DateTime]::Parse()` — common formats include `YYYY-MM-DD` and `YYYY/MM/DD`.
+
+  ```json
+  { "hold_update_until": "2025-12-31" }
+  ```
+</ParamField>
+
+<ParamField body="use_isolated_path" type="boolean | string" default="false">
+  Controls whether Scoop uses a dedicated environment variable for its apps' `PATH` entries instead of writing directly to the system or user `PATH`.
+
+  | Value | Behaviour |
+  |---|---|
+  | `false` | Scoop writes app paths to the standard `PATH` variable |
+  | `true` | Scoop uses the `SCOOP_PATH` environment variable |
+  | `"MY_VAR"` | Scoop uses the specified variable name instead of `SCOOP_PATH` |
+
+  This is useful for keeping Scoop-managed paths isolated from the rest of your system `PATH`.
+
+  ```json
+  { "use_isolated_path": true }
+  ```
+
+  ```json
+  { "use_isolated_path": "SCOOP_PATH" }
+  ```
+</ParamField>
+
+## Aria2 Download Settings
+
+sfsu and Scoop can use [aria2](https://aria2.github.io/) as the download back-end instead of PowerShell's built-in `Invoke-WebRequest`. Aria2 supports multi-connection downloads and is generally faster for large files. All aria2 settings are stored as top-level keys in `config.json` (they are flattened into the main config object).
+
+<ParamField body="aria2_enabled" type="boolean" default="false">
+  Set to `true` to use aria2c for downloading app artifacts. aria2 must be installed (`scoop install aria2`) and available on `PATH`.
+
+  ```json
+  { "aria2_enabled": true }
+  ```
+</ParamField>
+
+<ParamField body="aria2_warning_enabled" type="boolean" default="false">
+  When `true`, suppresses the warning message that Scoop displays while aria2 is downloading. Set to `false` (or leave unset) to see the warning.
+
+  ```json
+  { "aria2_warning_enabled": false }
+  ```
+</ParamField>
+
+<ParamField body="aria2_retry_wait" type="integer" default="2">
+  The number of seconds aria2 waits between retry attempts after a failed download segment. Corresponds to aria2's [`--retry-wait`](https://aria2.github.io/manual/en/html/aria2c.html#cmdoption-retry-wait) option.
+
+  ```json
+  { "aria2_retry_wait": 5 }
+  ```
+</ParamField>
+
+<ParamField body="aria2_split" type="integer" default="5">
+  The number of parallel connections (splits) aria2 uses per download. Corresponds to aria2's [`-s` / `--split`](https://aria2.github.io/manual/en/html/aria2c.html#cmdoption-s) option.
+
+  ```json
+  { "aria2_split": 8 }
+  ```
+</ParamField>
+
+<ParamField body="aria2_max_connection_per_server" type="integer" default="5">
+  The maximum number of simultaneous connections allowed to a single server per download. Corresponds to aria2's [`-x` / `--max-connection-per-server`](https://aria2.github.io/manual/en/html/aria2c.html#cmdoption-x) option.
+
+  ```json
+  { "aria2_max_connection_per_server": 16 }
+  ```
+</ParamField>
+
+<ParamField body="aria2_min_split_size" type="string" default="5M">
+  The minimum file size threshold for splitting a download into multiple connections. Files smaller than this value are downloaded as a single stream. Corresponds to aria2's [`-k` / `--min-split-size`](https://aria2.github.io/manual/en/html/aria2c.html#cmdoption-k) option. Accepts human-readable sizes such as `5M`, `1G`.
+
+  ```json
+  { "aria2_min_split_size": "1M" }
+  ```
+</ParamField>
+
+<ParamField body="aria2_options" type="string[]" default="[]">
+  An array of additional raw aria2 command-line flags to pass through verbatim. Use this for any aria2 option not covered by the dedicated fields above. See the [full aria2 options reference](https://aria2.github.io/manual/en/html/aria2c.html#options) for available flags.
+
+  ```json
+  {
+    "aria2_options": [
+      "--file-allocation=none",
+      "--max-overall-download-limit=0"
+    ]
+  }
+  ```
+</ParamField>
+
+## Complete Example
+
+The following shows a fully annotated `config.json` combining the most commonly used settings:
+
+```json
+{
+  "scoop_repo": "https://github.com/ScoopInstaller/Scoop",
+  "scoop_branch": "master",
+  "default_architecture": "64bit",
+  "proxy": "none",
+  "autostash_on_conflict": true,
+  "show_update_log": true,
+  "show_manifest": false,
+  "force_update": false,
+  "ignore_running_processes": false,
+  "use_isolated_path": true,
+  "root_path": "C:\\Users\\YourName\\scoop",
+  "global_path": "C:\\ProgramData\\scoop",
+  "gh_token": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "aria2_enabled": true,
+  "aria2_split": 8,
+  "aria2_max_connection_per_server": 8,
+  "aria2_min_split_size": "1M",
+  "aria2_retry_wait": 2
+}
+```

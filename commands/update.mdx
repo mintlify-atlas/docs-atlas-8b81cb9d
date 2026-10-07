@@ -1,0 +1,66 @@
+---
+title: "sfsu update — Update Scoop and All Buckets"
+sidebarTitle: "update"
+description: "Update Scoop itself and all installed buckets in parallel. Optionally display commit changelogs for each updated bucket."
+---
+
+The `update` command pulls the latest commits for Scoop itself and every installed bucket in parallel, using Rayon for concurrent git operations. It is the sfsu replacement for `scoop update` and is registered automatically when the sfsu hook is active, so running `scoop update` in a hooked shell will invoke `sfsu update` transparently.
+
+## Usage
+
+```powershell
+sfsu update [options]
+```
+
+## Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--changelog` | `-c` | After updating, print the commit messages introduced by each bucket update. Scoop's own changes are shown first, followed by one labelled section per bucket. |
+
+## Behavior
+
+When invoked, `sfsu update`:
+
+1. **Forces a branch checkout** — verifies the local Scoop repo is on the branch specified in your Scoop config (`scoop_branch`, defaulting to `master`).
+2. **Updates Scoop itself** — pulls the latest commits from the configured Scoop repository (`scoop_repo`).
+3. **Updates all buckets in parallel** — iterates over every bucket returned by `Bucket::list_all` and pulls each one concurrently via Rayon's parallel iterator.
+4. **Writes the last-update timestamp** — saves the current time to `last_update` in `~/.config/scoop/config.json`.
+5. **Prints changelogs** *(if `--changelog` is set)* — displays each bucket's new commits grouped under a labelled section.
+
+Progress bars are shown for Scoop and each bucket during the pull phase. Buckets that are already up to date display "✅ No updates available" without attempting a pull.
+
+<Note>
+  `sfsu update` updates **Scoop and its buckets only**. Updating installed
+  applications is not yet supported and will be added in a future release. To
+  update individual apps, continue to use `scoop update <app>` for now.
+</Note>
+
+## Hook integration
+
+When you install the sfsu hook, `scoop update` is remapped to `sfsu update`. You do not need to change your muscle memory — just run `scoop update` as usual and sfsu will handle it:
+
+```powershell
+# Both of these run the same sfsu update logic:
+scoop update
+sfsu update
+```
+
+## Examples
+
+Pull the latest Scoop and bucket metadata:
+
+```powershell
+sfsu update
+```
+
+Pull updates and display what changed in each bucket:
+
+```powershell
+sfsu update --changelog
+```
+
+<Tip>
+  After running `sfsu update`, use `sfsu status` to see which installed apps
+  have new versions available, then `scoop update <app>` to apply them.
+</Tip>

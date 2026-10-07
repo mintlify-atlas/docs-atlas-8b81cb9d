@@ -1,0 +1,104 @@
+---
+title: "sfsu status — Check Scoop and Package Update Status"
+sidebarTitle: "status"
+description: "Show update status for Scoop itself, all buckets, and installed apps. Replaces scoop status with parallel checking and JSON output support."
+---
+
+`sfsu status` checks three things at once — whether Scoop itself needs updating, whether any of your buckets are out of date, and which installed packages have a newer version available. All three checks are dispatched concurrently, so you get a full picture of your Scoop environment in one fast pass.
+
+## Usage
+
+```powershell
+sfsu status [options]
+```
+
+## Flags
+
+| Flag | Short | Description |
+|---|---|---|
+| `--only <section>` | `-O` | Check only the specified section(s). Can be repeated. Accepted values: `scoop`, `buckets`, `apps`. |
+| `--ignore-held` | `-H` | Skip packages that are marked as held, unless they also have missing dependencies or another reason to be shown. |
+| `--json` | | Emit results as a structured JSON object (see [JSON Output](#json-output) below). |
+| `--verbose` | `-v` | In the buckets section, list each outdated bucket by name instead of showing only a summary line. |
+
+## Sections
+
+`sfsu status` is divided into three independent sections. By default all three run together; use `--only` to focus on one or more.
+
+### Scoop
+
+Reports whether the Scoop application itself is on the latest commit. When out of date, a yellow warning is printed prompting you to run `scoop update`.
+
+### Buckets
+
+Reports whether any installed bucket has commits that have not yet been fetched locally. Without `--verbose` only a single summary line is shown. With `--verbose`, every outdated bucket is listed by name.
+
+### Apps
+
+Displays a table of installed applications that have at least one of the following conditions:
+
+- The installed version differs from the version available in the bucket.
+- The package has missing dependencies.
+- The package is held (unless `--ignore-held` is set).
+
+Each row shows the package name, currently-installed version, available version, and any informational notes (such as `"Held package"`).
+
+## JSON Output
+
+With `--json`, sfsu outputs a single JSON object with three top-level keys:
+
+```json
+{
+  "scoop": false,
+  "buckets": ["extras"],
+  "packages": [
+    {
+      "name": "nodejs",
+      "current": "20.11.0",
+      "available": "21.7.1",
+      "info": null,
+      "missing_dependencies": []
+    }
+  ]
+}
+```
+
+| Key | Type | Description |
+|---|---|---|
+| `scoop` | `boolean` | `true` if Scoop itself is outdated. |
+| `buckets` | `string[]` | Names of buckets that have pending upstream commits. Only populated when `--verbose` is used or `--only buckets` is specified. |
+| `packages` | `object[]` | Array of package info objects for apps that are not fully up to date. |
+
+## Examples
+
+<CodeGroup>
+
+```powershell Full status check
+sfsu status
+```
+
+```powershell JSON output
+sfsu status --json
+```
+
+```powershell Apps section only
+sfsu status --only apps
+```
+
+```powershell Scoop and buckets only
+sfsu status --only scoop --only buckets
+```
+
+```powershell Suppress held-package noise
+sfsu status --ignore-held
+```
+
+```powershell List individual outdated buckets
+sfsu status --verbose
+```
+
+</CodeGroup>
+
+<Note>
+  `sfsu status` replaces the deprecated `sfsu outdated` command. If you have scripts or aliases pointing at `sfsu outdated`, update them to `sfsu status`. The output format and flags are identical.
+</Note>

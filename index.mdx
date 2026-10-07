@@ -1,20 +1,80 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "sfsu: Stupid Fast Scoop Utils"
+sidebarTitle: "Home"
+description: "sfsu is a blazing-fast Rust companion for the Scoop Windows package manager, replacing the slowest commands with implementations up to 100× faster."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+sfsu (Stupid Fast Scoop Utils) is a Rust-powered CLI that supercharges your Scoop workflow. It provides drop-in replacements for the slowest Scoop commands — search, list, status, and more — running them 30–100× faster through parallel execution. sfsu works alongside your existing Scoop installation and can be wired in transparently via shell hooks so you never notice the switch.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install sfsu via Scoop in seconds and get running immediately
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Run your first sfsu command and set up shell hooks in minutes
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/app">
+    Full reference for every command, subcommand, and flag
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/usage/configuration">
+    Understand the Scoop config fields sfsu reads and respects
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## Why sfsu?
+
+Scoop is a great package manager, but its PowerShell implementation can be slow — especially for search and list operations over large bucket collections. sfsu reimplements the hottest code paths in Rust using Rayon for parallelism, cutting wait times dramatically.
+
+<CardGroup cols={3}>
+  <Card title="Parallel Search" icon="magnifying-glass">
+    Search across all buckets simultaneously using Rust Regex and Rayon thread pools
+  </Card>
+  <Card title="Shell Hooks" icon="plug">
+    Transparently intercept `scoop` commands in PowerShell, Bash, Zsh, and Nushell
+  </Card>
+  <Card title="JSON Output" icon="brackets-curly">
+    Every major command supports `--json` for scripting and automation
+  </Card>
+  <Card title="VirusTotal Scanning" icon="shield-check">
+    Scan package hashes and URLs against VirusTotal directly from the CLI
+  </Card>
+  <Card title="Cache Management" icon="database">
+    List and remove download cache entries with regex or glob patterns
+  </Card>
+  <Card title="Multi-architecture" icon="microchip">
+    Targets x86_64, i686, and arm64 Windows with architecture-aware commands
+  </Card>
+</CardGroup>
+
+## Quick Install
+
+```powershell
+scoop bucket add extras
+scoop install sfsu
+```
+
+Once installed, wire sfsu into your shell so `scoop` commands are intercepted automatically:
+
+```powershell
+# Add to your PowerShell profile
+Invoke-Expression (&sfsu hook)
+```
+
+<Steps>
+  <Step title="Install sfsu">
+    Add the `extras` bucket and install sfsu via Scoop — see the [Installation guide](/installation) for all options.
+  </Step>
+  <Step title="Set up shell hooks">
+    Add the hook line to your shell profile so sfsu handles compatible `scoop` commands transparently — see [Shell Hooks](/usage/hook).
+  </Step>
+  <Step title="Run your first command">
+    Try `sfsu search git` or `sfsu app list` to see the speed difference immediately.
+  </Step>
+  <Step title="Explore advanced features">
+    Browse the [Command Reference](/commands/app) to discover VirusTotal scanning, dependency resolution, export, and more.
+  </Step>
+</Steps>
+
+<Note>
+  sfsu is a companion to Scoop, not a replacement. It requires an existing Scoop installation and reads Scoop's config and bucket directories directly.
+</Note>

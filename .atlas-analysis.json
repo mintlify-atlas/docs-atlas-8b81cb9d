@@ -1,0 +1,103 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "sfsu",
+  "projectDescription": "A blazing-fast Rust-based drop-in replacement and companion utility for the Scoop Windows package manager, delivering up to 100× faster equivalents of common Scoop commands.",
+  "theme": "aspen",
+  "primaryColor": "#00d1b2",
+  "lightColor": "#24d35c",
+  "darkColor": "#e8803c",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "usage/hook",
+              "usage/global-flags",
+              "usage/configuration"
+            ]
+          },
+          {
+            "group": "Command Reference",
+            "pages": [
+              "commands/app",
+              "commands/bucket",
+              "commands/search",
+              "commands/status",
+              "commands/cache",
+              "commands/depends",
+              "commands/scan",
+              "commands/export",
+              "commands/checkup",
+              "commands/update"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/guide",
+              "contributing/building"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Up to 100× faster alternatives to Scoop commands using parallel execution (Rayon)",
+    "Shell hook system supporting PowerShell, Bash/Zsh (WSL/MSYS2), and Nushell",
+    "Full app subcommand suite: list, info, cat, home, cleanup, download, purge",
+    "Full bucket subcommand suite: add, remove, list, known, update, outdated, unused",
+    "Download cache management (list and remove)",
+    "Dependency resolution with `depends` command",
+    "VirusTotal integration for scanning package hashes/URLs",
+    "JSON output mode for all major commands",
+    "Global/user context support with `-g` flag",
+    "Architecture selection (x86_64, i686, arm64)",
+    "System health checkup command",
+    "Export installed apps and buckets to JSON"
+  ],
+  "publicApiSurface": [
+    "sfsu app cat <package>",
+    "sfsu app cleanup [apps...] [--cache] [--dry-run]",
+    "sfsu app download <apps...> [--outdated]",
+    "sfsu app home <package>",
+    "sfsu app info <package>",
+    "sfsu app list [--bucket <name>] [--sort-by <field>] [--json]",
+    "sfsu app purge <apps...> [--dry-run] [-y]",
+    "sfsu bucket add <name> [<url>]",
+    "sfsu bucket remove <name>",
+    "sfsu bucket list [--json]",
+    "sfsu bucket known",
+    "sfsu bucket unused",
+    "sfsu bucket update [--changelog]",
+    "sfsu bucket outdated",
+    "sfsu cache list [patterns...] [--glob] [--json]",
+    "sfsu cache remove [patterns...] [--glob]",
+    "sfsu search <pattern> [--bucket <name>] [--installed] [--case-sensitive] [--mode <mode>] [--json]",
+    "sfsu status [--only scoop|buckets|apps] [--ignore-held] [--json]",
+    "sfsu depends <package> [<bucket>] [--json]",
+    "sfsu scan <apps...> [--all] [--bucket <name>] [--filter <level>] [--json]",
+    "sfsu export [--config]",
+    "sfsu checkup [--json]",
+    "sfsu update [--changelog]",
+    "sfsu hook [--disable <cmd>...] [--enabled <cmd>...] [--shell powershell|bash|nu]",
+    "--json (global flag)",
+    "--verbose / -v (global flag)",
+    "--no-color (global flag)",
+    "--arch <architecture> (global flag)",
+    "--global / -g (global flag, contexts feature)",
+    "--assume-yes / -y (global flag)",
+    "--disable-git (global flag)"
+  ]
+}

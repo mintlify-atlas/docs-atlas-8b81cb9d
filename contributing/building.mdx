@@ -1,0 +1,226 @@
+---
+title: "Build sfsu from Source on Windows"
+sidebarTitle: "Building"
+description: "Set up a local sfsu development environment on Windows with Rust, Just, and PowerShell. Includes build commands, release targets, and benchmark instructions."
+---
+
+Building sfsu from source gives you access to the latest unreleased changes, lets you compile for specific architectures, and is a prerequisite for contributing code. The entire toolchain runs on Windows and relies on Rust's MSVC target, the Just task runner, and PowerShell as the shell. This guide walks through every step from a clean machine to a working binary.
+
+## Prerequisites
+
+Install all of the following before proceeding.
+
+<Note>
+  sfsu targets the **MSVC toolchain**, not GNU/MinGW. This means Visual Studio (or the standalone Visual Studio Build Tools) with the **"Desktop development with C++"** workload must be installed on your machine. The Rust installer will warn you if the MSVC components are missing. Without them, the build will fail when linking the final binary.
+</Note>
+
+| Tool | Version | Notes |
+|---|---|---|
+| **Rust** | `1.99.0` | Exact version pinned in `rust-toolchain.toml`; `rustup` will install it automatically |
+| **MSVC C++ build tools** | Any current VS 2019/2022 | Required by the `*-pc-windows-msvc` targets |
+| **Just** | Latest | Task runner used for all build and release recipes |
+| **PowerShell** | 5.1+ (or PowerShell 7) | `justfile` sets `pwsh.exe` as its shell |
+| **pre-commit** | Latest | Runs linting and commit-message hooks |
+
+- **Rust**: Install via [rustup.rs](https://rustup.rs). Once `rustup` is on your `PATH`, running any `cargo` command inside the repository will automatically download and activate Rust `1.99.0` as declared in `rust-toolchain.toml`. The toolchain also includes the `rustfmt` and `clippy` components and all three Windows MSVC targets (`x86_64`, `i686`, `aarch64`).
+- **Just**: Install from [github.com/casey/just](https://github.com/casey/just) or via Scoop (`scoop install just`).
+- **pre-commit**: Install from [pre-commit.com](https://pre-commit.com/) or via `pip install pre-commit`.
+
+## Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone your fork (or the upstream repository) and change into the project directory.
+
+    ```powershell
+    git clone https://github.com/winpax/sfsu.git
+    cd sfsu
+    ```
+  </Step>
+
+  <Step title="Run just setup">
+    `just setup` installs the pre-commit hooks for the `pre-commit`, `commit-msg`, and `pre-push` hook stages. These hooks enforce code formatting with `rustfmt`, linting with `clippy`, and commit-message validation against the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+    ```powershell
+    just setup
+    ```
+
+    You only need to run this once per clone. To uninstall the hooks later, run `just remove-pre-commit`.
+  </Step>
+
+  <Step title="Build a debug binary">
+    Compile a debug build with the standard Cargo workflow. This is the fastest compile, suitable for day-to-day development and running tests.
+
+    ```powershell
+    cargo build
+    ```
+  </Step>
+
+  <Step title="Locate the output binary">
+    The compiled debug executable is placed at:
+
+    ```
+    target\debug\sfsu.exe
+    ```
+
+    You can run it directly or add the directory to your `PATH` for convenience during development.
+  </Step>
+</Steps>
+
+## Build Commands
+
+The `justfile` provides recipes for common build tasks. All `just build` recipes compile with `--release` optimizations and target a specific Windows MSVC triple.
+
+<CodeGroup>
+
+```powershell Debug build
+# Standard debug build via Cargo (no Just recipe needed)
+cargo build
+```
+
+```powershell Release — x86_64 (64-bit)
+just build x86_64
+```
+
+```powershell Release — i686 (32-bit)
+just build i686
+```
+
+```powershell Release — aarch64 (ARM64)
+just build aarch64
+```
+
+```powershell All architectures
+# Runs x86_64, then i686, then aarch64 in sequence
+just build-all
+```
+
+```powershell Cargo check (fast)
+# Runs `cargo check` without producing an executable
+just check
+```
+
+</CodeGroup>
+
+Each `just build <TARGET>` recipe expands to:
+
+```powershell
+cargo build --release --target <TARGET>-pc-windows-msvc
+```
+
+Release binaries are placed under `target\<TARGET>-pc-windows-msvc\release\sfsu.exe`.
+
+## Release Builds
+
+Release recipes extend the build step by copying the binary into a `./release/` directory, packaging it into a `.7z` archive, and computing SHA256 hashes for both the archive and the `.exe`. This mirrors the artifacts published on the GitHub Releases page.
+
+<CodeGroup>
+
+```powershell Single target
+# Builds, packages, and hashes one architecture
+just release x86_64
+just release i686
+just release aarch64
+```
+
+```powershell All targets
+# Cleans ./release/, then builds and packages all three architectures
+just release-all
+```
+
+</CodeGroup>
+
+The `just release-all` recipe first runs `just clean` (which removes and re-creates the `./release/` directory) before building each target in sequence. Output files follow the pattern:
+
+```
+release/
+  sfsu-x86_64.exe
+  dl-x86_64.7z
+  sfsu-i686.exe
+  dl-i686.7z
+  sfsu-aarch64.exe
+  dl-aarch64.7z
+```
+
+Hash files are generated by `scripts/hash.py` and placed alongside each artifact.
+
+## Beta Builds
+
+Beta builds compile sfsu with the `--features beta` flag, enabling commands and API surface that are not yet stable. Use these to test upcoming features before they are promoted to a stable release.
+
+<CodeGroup>
+
+```powershell Beta build — single target
+just beta-build x86_64
+just beta-build i686
+just beta-build aarch64
+```
+
+```powershell Beta release — all targets
+# Cleans ./release/, then builds and packages all three architectures with beta features
+just beta-release-all
+```
+
+</CodeGroup>
+
+## Cargo Features
+
+The `Cargo.toml` defines several feature flags that control which commands and capabilities are compiled in.
+
+```toml
+[features]
+default = ["download", "contexts", "manifest-hashes"]
+
+download         = []           # Enables download-related commands
+contexts         = []           # Enables the --global flag
+manifest-hashes  = [...]        # Enables hash verification for manifests
+beta             = []           # Enables beta/preview commands
+v2               = []           # Enables v2 API changes (breaking)
+```
+
+| Feature | Included by default | Description |
+|---|---|---|
+| `download` | ✅ | Enables download-related commands |
+| `contexts` | ✅ | Enables the `--global` flag for system-wide operations |
+| `manifest-hashes` | ✅ | Enables hash verification for app manifests; pulls in SHA-1, SHA-2, base64, XML, and URL dependencies |
+| `beta` | ❌ | Enables beta commands not yet in stable releases |
+| `v2` | ❌ | Enables v2 API changes that are intentionally breaking |
+
+To build with a non-default feature set, pass `--features` to Cargo directly:
+
+```powershell
+# Build with beta features enabled
+cargo build --release --features beta
+
+# Build without hash verification (smaller binary)
+cargo build --release --no-default-features --features "download,contexts"
+```
+
+## Running Tests
+
+Run the full unit-test suite with Cargo's built-in test runner:
+
+```powershell
+cargo test
+```
+
+<Note>
+  Some integration tests interact directly with Scoop's data on disk. A working **Scoop installation** is required for those tests to pass. Tests that depend on Scoop will be skipped or fail gracefully if Scoop is not installed, but a clean run of the full suite assumes Scoop is available.
+</Note>
+
+## Benchmarks
+
+sfsu includes two [Criterion](https://bheisler.github.io/criterion.rs/book/) benchmark suites defined in `Cargo.toml`:
+
+| Benchmark | What it measures |
+|---|---|
+| `url_parsing` | Performance of URL parsing across various input patterns |
+| `hashing` | Throughput of hash algorithms used in manifest verification |
+
+Run all benchmarks with:
+
+```powershell
+cargo bench
+```
+
+Criterion generates HTML reports in `target/criterion/`. Historical benchmark results and comparisons between sfsu and Scoop have been moved to the [project wiki](https://github.com/winpax/sfsu/wiki/Benchmarks).

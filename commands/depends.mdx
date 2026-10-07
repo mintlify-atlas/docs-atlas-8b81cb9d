@@ -1,0 +1,83 @@
+---
+title: "sfsu depends — Resolve Package Dependency Trees"
+sidebarTitle: "depends"
+description: "List the dependencies of a Scoop package in installation order. Supports bucket scoping and JSON output for scripting."
+---
+
+The `depends` command inspects a package manifest and prints all of its dependencies in the order they will be installed. This is useful for understanding what sfsu will pull in before you commit to an install, and for auditing complex package trees in custom buckets.
+
+## Usage
+
+```powershell
+sfsu depends <package> [<bucket>] [options]
+```
+
+## Arguments
+
+<ParamField path="package" type="string" required>
+  The package to resolve dependencies for. Accepts a plain name (`python`) or a
+  fully-qualified `bucket/name` reference.
+</ParamField>
+
+<ParamField path="bucket" type="string">
+  Optionally restrict the manifest lookup to a specific bucket. Equivalent to
+  prefixing the package name with `bucket/` in the `<package>` argument.
+</ParamField>
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Emit the full manifest list as a JSON array instead of the formatted section output. |
+
+## Output
+
+When run without `--json`, `depends` prints one labelled section per matching manifest. Each section header identifies both the package name and the bucket it came from, followed by the list of dependency references in installation order.
+
+```
+Dependencies for 'python' in 'main'
+  ├── 7zip
+  └── dark
+```
+
+If the package has no declared dependencies, nothing is printed for that manifest.
+
+### JSON output
+
+Passing `--json` serialises the full manifest list to stdout as a JSON array. This is suitable for piping into `jq` or other tooling:
+
+```powershell
+sfsu depends python --json | jq '.[0].depends'
+```
+
+## Examples
+
+Resolve dependencies for a package in any installed bucket:
+
+```powershell
+sfsu depends python
+```
+
+Scope the lookup to the `extras` bucket:
+
+```powershell
+sfsu depends python extras
+```
+
+Output the result as JSON for scripting:
+
+```powershell
+sfsu depends python --json
+```
+
+<Tip>
+  If you want to test this command against a package that has rich
+  dependencies, `phpstudy-lagecy-scoop` is a good real-world example noted in
+  the source.
+</Tip>
+
+<Note>
+  If no manifests are found for the given package reference, `sfsu depends`
+  exits with an error. Double-check the package name and ensure the relevant
+  bucket is added with `scoop bucket add <bucket>`.
+</Note>

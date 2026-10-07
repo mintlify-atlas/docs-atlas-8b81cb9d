@@ -1,0 +1,335 @@
+---
+title: "sfsu app — Manage Installed Scoop Applications"
+sidebarTitle: "app"
+description: "Reference for sfsu app subcommands: list, info, cat, home, cleanup, download, and purge. Manage installed Scoop apps with parallel speed."
+---
+
+The `sfsu app` command group gives you fast, parallel control over every application that Scoop has installed on your system. Each subcommand is a blazing-fast Rust replacement for the equivalent `scoop` command, reading the same manifests and app directories that Scoop itself uses — no extra setup required.
+
+## Subcommands at a glance
+
+| Subcommand | Description |
+|---|---|
+| [`list`](#sfsu-app-list) | List all installed packages |
+| [`info`](#sfsu-app-info) | Display information about a package |
+| [`cat`](#sfsu-app-cat) | Print a manifest's raw JSON to the terminal |
+| [`home`](#sfsu-app-home) | Open an app's homepage in your browser |
+| [`cleanup`](#sfsu-app-cleanup) | Remove old versions of installed apps |
+| [`download`](#sfsu-app-download) | Download installer files without installing |
+| [`purge`](#sfsu-app-purge) | Remove an app's persisted user data |
+
+---
+
+## `sfsu app list`
+
+Lists every package that is currently installed in your Scoop environment. Results are sorted by name by default and can be filtered by bucket, re-sorted by any field, and output as JSON for scripting.
+
+```
+sfsu app list [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--bucket <name>` | `-b` | `string` | — | Limit output to packages installed from a specific bucket |
+| `--sort-by <field>` | — | `name\|version\|source\|updated\|notes` | `name` | Field to sort results by |
+| `--descending` | — | flag | off | Reverse the sort order |
+| `--json` | — | flag | off | Emit results as a JSON array |
+
+### Examples
+
+<CodeGroup>
+
+```powershell List all installed apps
+sfsu app list
+```
+
+```powershell Filter to a single bucket
+sfsu app list --bucket main
+```
+
+```powershell Sort by version, newest first
+sfsu app list --sort-by version --descending
+```
+
+```powershell Machine-readable JSON output
+sfsu app list --json
+```
+
+</CodeGroup>
+
+<Note>
+The positional `pattern` argument for filtering by regex has been **removed in v2**. Use `sfsu search --installed <pattern>` instead to search through installed apps by name.
+</Note>
+
+---
+
+## `sfsu app info`
+
+Displays a detailed summary of a package — whether or not it is currently installed. You can look up a package by its bare name or with the `bucket/package` qualifier to disambiguate across multiple buckets.
+
+```
+sfsu app info <package> [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<package>` | ✅ | Package reference — either `package` or `bucket/package` |
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--single` / `-s` | `-s` | flag | off | When multiple matches exist, show only the most recent version |
+| `--hide-emails` / `-E` | `-E` | flag | off | Hide contributor email addresses from `Updated by` output |
+| `--json` | — | flag | off | Emit the package info as JSON |
+| `--verbose` | — | flag | off | Show extended fields such as `Updated at` and `Updated by` |
+
+The displayed fields include: name, bucket, version, description, website, license, binaries, shortcuts, notes, and installation status. Pass `--verbose` to also show the last commit author and timestamp pulled from the bucket's git history.
+
+### Examples
+
+<CodeGroup>
+
+```powershell Basic package info
+sfsu app info git
+```
+
+```powershell Qualify with a bucket name
+sfsu app info extras/git
+```
+
+```powershell JSON output for scripting
+sfsu app info git --json
+```
+
+```powershell Show only the most recent match
+sfsu app info python --single
+```
+
+</CodeGroup>
+
+<Tip>
+Use the `bucket/package` syntax when the same package name exists in multiple installed buckets. sfsu will only inspect the bucket you specify, making lookups faster and unambiguous.
+</Tip>
+
+---
+
+## `sfsu app cat`
+
+Prints the raw JSON manifest for an installed or available package directly to your terminal. When color output is enabled sfsu pipes the content through [`bat`](https://github.com/sharkdp/bat) for syntax highlighting; otherwise it falls back to plain text.
+
+```
+sfsu app cat <package>
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<package>` | ✅ | Package reference whose manifest JSON to display |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Display a manifest with syntax highlighting
+sfsu app cat git
+```
+
+```powershell Qualify with a bucket name
+sfsu app cat extras/vscode
+```
+
+</CodeGroup>
+
+<Note>
+Color output (and therefore `bat` highlighting) follows sfsu's global `--no-color` flag. Redirect to a file or pipe to another tool to capture plain JSON without ANSI escape codes.
+</Note>
+
+---
+
+## `sfsu app home`
+
+Opens the homepage URL recorded in a package's manifest with your system's default web browser. The command resolves the manifest, reads the `homepage` field, and hands the URL to the OS — no browser flags required.
+
+```
+sfsu app home <package>
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<package>` | ✅ | Package reference whose homepage to open |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Open the git homepage
+sfsu app home git
+```
+
+```powershell Qualify with a bucket name
+sfsu app home extras/vscode
+```
+
+</CodeGroup>
+
+<Warning>
+If the package manifest does not define a `homepage` field sfsu will exit with an error: `No homepage found for package`.
+</Warning>
+
+---
+
+## `sfsu app cleanup`
+
+Removes old version directories that Scoop leaves behind after an upgrade, freeing disk space. When no app names are provided sfsu requires the `--all` flag to guard against accidental mass-deletion. Pass `--cache` to also purge cached installer files for old versions.
+
+```
+sfsu app cleanup [apps...] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `[apps...]` | — | One or more package references to clean up. Omit with `--all` to clean every installed app. |
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--all` | `-a` | flag | off | Clean up every installed app |
+| `--cache` | `-k` | flag | off | Also remove cached installer files for old versions |
+| `--dry-run` | — | flag | off | Print what would be removed without deleting anything |
+| `--assume-yes` | — | flag | off | Skip confirmation prompts |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Clean up a single app
+sfsu app cleanup git
+```
+
+```powershell Clean up with cached installer removal
+sfsu app cleanup git --cache
+```
+
+```powershell Preview what would be removed
+sfsu app cleanup --all --dry-run
+```
+
+```powershell Clean every installed app including caches
+sfsu app cleanup --all --cache
+```
+
+</CodeGroup>
+
+<Tip>
+Use `--dry-run` first whenever you are unsure what will be deleted. sfsu prints every directory and cache entry it would remove so you can review the list before committing.
+</Tip>
+
+---
+
+## `sfsu app download`
+
+Downloads the installer files for one or more packages into Scoop's cache directory without actually installing them. This is useful for staging updates on a fast connection before applying them offline, or for pre-populating the cache on a fresh machine.
+
+```
+sfsu app download <apps...> [options]
+```
+
+<Note>
+`sfsu app download` is a **beta** feature compiled in when the `download` Cargo feature is enabled. It may not be present in all distribution builds.
+</Note>
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<apps...>` | ✅ (unless `--outdated`) | One or more package references to download |
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--outdated` | — | flag | off | Download new versions of every currently outdated app |
+| `--arch` | — | `string` | system default | Target architecture (`32bit`, `64bit`, or `arm64`) |
+| `--no-hash-check` / `-H` | `-H` | flag | off | Skip SHA hash validation after download |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Download a single package
+sfsu app download git
+```
+
+```powershell Download all outdated packages
+sfsu app download --outdated
+```
+
+```powershell Download for a specific architecture
+sfsu app download git --arch 64bit
+```
+
+</CodeGroup>
+
+<Warning>
+Using `--no-hash-check` bypasses integrity verification. Only use this flag if you trust the download source — modified or corrupted files will not be detected.
+</Warning>
+
+---
+
+## `sfsu app purge`
+
+Permanently removes the `persist` folder for one or more packages. Scoop stores user data (configuration files, databases, etc.) in `persist/<app>` so that it survives uninstalls — `purge` deletes that data. When called with no arguments it automatically targets persist folders whose app is no longer installed.
+
+```
+sfsu app purge [apps...] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `[apps...]` | — | Package references whose persist folders to delete. Omit to target all uninstalled apps that still have a persist folder. |
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--dry-run` | — | flag | off | Print what would be removed without deleting anything |
+| `--assume-yes` | `-y` | flag | off | Skip all confirmation prompts |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Preview what would be purged
+sfsu app purge myapp --dry-run
+```
+
+```powershell Purge a single app's user data
+sfsu app purge myapp --assume-yes
+```
+
+```powershell Purge all uninstalled apps (with confirmation)
+sfsu app purge
+```
+
+</CodeGroup>
+
+<Warning>
+**This operation is irreversible.** Purging an app's persist folder permanently deletes user configuration, databases, and any other data the app stored there. Always run with `--dry-run` first to confirm exactly what will be removed.
+</Warning>
+
+<Note>
+If you purge a persist folder while the app is still installed, Scoop will treat the app as freshly installed the next time it runs. sfsu will warn you and ask for a second confirmation before proceeding in that case — unless `--assume-yes` is set.
+</Note>

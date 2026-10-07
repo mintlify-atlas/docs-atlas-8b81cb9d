@@ -1,47 +1,204 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with sfsu in 5 Minutes"
+sidebarTitle: "Quickstart"
+description: "Install sfsu, set up shell hooks, and run your first faster Scoop commands in under five minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+sfsu slots into your existing Scoop workflow with minimal setup. Within a few minutes you will have a native Rust binary handling your most common Scoop commands at 30–100× the speed of the default PowerShell implementations — and you will not even need to change how you type them.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Install sfsu via Scoop">
+    Add the extras bucket if you have not already, then install sfsu. Scoop picks the right binary for your architecture automatically.
 
-    ```bash
-    npm install your-package
+    ```powershell
+    scoop bucket add extras
+    scoop install sfsu
+    ```
+
+    Confirm the installation succeeded:
+
+    ```powershell
+    sfsu --version
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
+  <Step title="Set up the PowerShell shell hook">
+    The hook rewrites the `scoop` function in your current shell session so that supported subcommands are silently routed to sfsu. Add the line below to your PowerShell profile (`$PROFILE`) to activate it in every new session.
+
+    ```powershell
+    Invoke-Expression (&sfsu hook)
     ```
+
+    To apply it immediately without opening a new terminal, dot-source your profile:
+
+    ```powershell
+    . $PROFILE
+    ```
+
+    <Note>
+      You can selectively disable individual hooks with the `--disable` flag. For example, to keep Scoop's own `list` command instead of sfsu's:
+
+      ```powershell
+      Invoke-Expression (&sfsu hook --disable list)
+      ```
+
+      See [Shell Hooks](/usage/hook) for the full hook reference, including Bash, Zsh, and Nushell setup.
+    </Note>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
+  <Step title="Try the key commands">
+    With or without the hook active, run sfsu commands directly to see the speed difference.
+
+    **Search across all buckets** — sfsu scans every manifest in every bucket in parallel using Rust regex:
+
+    ```powershell
+    sfsu search git
     ```
+
+    Output groups results by bucket, showing the package name, version, whether it is currently installed, and any matching binary names:
+
+    ```
+    'extras' bucket:
+      git (2.47.0)
+      git-annex (10.20241031)
+      git-credential-manager (2.6.0) [installed]
+        git-credential-manager.exe
+
+    'main' bucket:
+      git (2.47.0) [installed]
+    ```
+
+    **List installed packages** — replaces `scoop list` with a parallel walk of your install directory:
+
+    ```powershell
+    sfsu app list
+    ```
+
+    **Check status** — inspects Scoop itself, all buckets, and every installed app for updates in one parallel pass:
+
+    ```powershell
+    sfsu status
+    ```
+
+    sfsu checks three sections concurrently:
+
+    - **Scoop** — whether the Scoop app itself is up to date
+    - **Buckets** — whether any registered bucket has unpulled commits
+    - **Apps** — which installed packages have a newer version available
+  </Step>
+
+  <Step title="Explore more commands">
+    sfsu covers a broad surface area of Scoop functionality. A few highlights to try next:
+
+    ```powershell
+    # Show detailed information about a package
+    sfsu app info git
+
+    # Open a package's homepage in your browser
+    sfsu app home git
+
+    # List packages with available updates
+    sfsu outdated
+
+    # Show the dependency tree for a package
+    sfsu depends git
+
+    # List installed packages restricted to one bucket
+    sfsu app list --bucket extras
+
+    # Export your installed packages to JSON
+    sfsu export
+    ```
+
+    See the [Command Reference](/commands/app) for every available command, subcommand, and flag.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Using `--json` for Scripting
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+<Tip>
+  Almost every sfsu command accepts a global `--json` flag that prints machine-readable JSON instead of the human-formatted table output. This makes sfsu easy to integrate into scripts, CI pipelines, or tools like `jq`.
 </Tip>
+
+For example, to get your full installed package list as JSON:
+
+```powershell
+sfsu app list --json
+```
+
+```json
+[
+  {
+    "name": "git",
+    "version": "2.47.0",
+    "source": "main",
+    "updated": "2024-11-01T10:32:00Z",
+    "notes": ""
+  },
+  {
+    "name": "git-credential-manager",
+    "version": "2.6.0",
+    "source": "extras",
+    "updated": "2024-10-28T14:11:00Z",
+    "notes": ""
+  }
+]
+```
+
+You can pipe this output directly to `jq` or `ConvertFrom-Json` in PowerShell for further filtering and transformation.
+
+`sfsu search` with `--json` returns a map of bucket names to arrays of match objects, each containing `name`, `bucket`, `version`, `installed`, and `bins` fields:
+
+```powershell
+sfsu search git --json
+```
+
+```json
+{
+  "main": [
+    {
+      "name": "git",
+      "bucket": "main",
+      "version": "2.47.0",
+      "installed": true,
+      "bins": []
+    }
+  ],
+  "extras": [
+    {
+      "name": "git-credential-manager",
+      "bucket": "extras",
+      "version": "2.6.0",
+      "installed": true,
+      "bins": ["git-credential-manager.exe"]
+    }
+  ]
+}
+```
+
+`sfsu status --json` similarly returns a structured object with `scoop`, `buckets`, and `packages` keys.
+
+## Global Flags
+
+These flags work on every sfsu command:
+
+| Flag | Description |
+|---|---|
+| `--json` | Output raw JSON instead of human-readable format |
+| `--verbose` / `-v` | Show additional detail in output |
+| `--no-color` | Disable terminal colour formatting |
+| `--arch` | Override target architecture (e.g. `x86_64`, `arm64`) |
+| `--assume-yes` / `-y` | Answer "yes" to all interactive prompts |
+| `--disable-git` | Skip git operations; useful if git is not installed |
+| `--debug` | Enable debug-level logging |
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Shell Hooks" icon="plug" href="/usage/hook">
+    Full hook setup for PowerShell, Bash (WSL/MSYS2), Zsh, and Nushell — including per-command enable/disable options.
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/app">
+    Every sfsu command documented with all flags, examples, and expected output.
+  </Card>
+</CardGroup>

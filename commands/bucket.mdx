@@ -1,0 +1,300 @@
+---
+title: "sfsu bucket — Manage Scoop Buckets"
+sidebarTitle: "bucket"
+description: "Reference for sfsu bucket subcommands: add, remove, list, known, update, outdated, and unused. Manage Scoop buckets with git-powered updates."
+---
+
+The `sfsu bucket` command group lets you manage the git repositories — called *buckets* — that Scoop uses as package sources. sfsu replaces Scoop's bucket commands with Rust-native git operations powered by [gitoxide](https://github.com/Byron/gitoxide) and [Rayon](https://github.com/rayon-rs/rayon), delivering parallel clones, parallel pulls, and significantly faster listing across large bucket collections.
+
+## Subcommands at a glance
+
+| Subcommand | Alias | Description |
+|---|---|---|
+| [`add`](#sfsu-bucket-add) | — | Add a new bucket |
+| [`remove`](#sfsu-bucket-remove) | `rm` | Remove an installed bucket |
+| [`list`](#sfsu-bucket-list) | — | List all installed buckets |
+| [`known`](#sfsu-bucket-known) | — | List all official known buckets |
+| [`update`](#sfsu-bucket-update) | — | Pull the latest commits for every bucket |
+| [`outdated`](#sfsu-bucket-outdated) | — | List buckets that are behind their remote |
+| [`unused`](#sfsu-bucket-unused) | — | List buckets with no installed apps |
+
+---
+
+## `sfsu bucket add`
+
+Clones a bucket repository into your Scoop buckets directory. If the bucket name matches one of Scoop's built-in known buckets you can omit the URL — sfsu will look it up automatically. Progress is reported in real time via gitoxide's streaming renderer.
+
+```
+sfsu bucket add <name> [url]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<name>` | ✅ | The name to give the bucket locally |
+| `[url]` | — | Git URL of the bucket repository. May be omitted for any bucket listed by `sfsu bucket known`. |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Add an official known bucket by name
+sfsu bucket add extras
+```
+
+```powershell Add a custom bucket with an explicit URL
+sfsu bucket add my-bucket https://github.com/user/my-scoop-bucket
+```
+
+```powershell Add the official versions bucket
+sfsu bucket add versions
+```
+
+</CodeGroup>
+
+<Note>
+If the bucket directory already exists sfsu aborts with a helpful message telling you to run `sfsu bucket rm <name>` first. This prevents accidentally overwriting a bucket that already has local changes.
+</Note>
+
+<Tip>
+Run `sfsu bucket known` to see the full list of official bucket names that can be added without a URL.
+</Tip>
+
+---
+
+## `sfsu bucket remove`
+
+Deletes an installed bucket from your Scoop buckets directory. sfsu will ask for confirmation before removing, and adds an extra prompt if you attempt to remove the `main` bucket, since doing so breaks most Scoop installations.
+
+```
+sfsu bucket remove <name> [options]
+sfsu bucket rm <name> [options]
+```
+
+`remove` and `rm` are identical — `rm` is a registered alias.
+
+### Arguments
+
+| Argument | Required | Description |
+|---|---|---|
+| `<name>` | ✅ | The name of the bucket to remove |
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--assume-yes` | — | flag | off | Skip all confirmation prompts |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Remove a bucket (with confirmation prompt)
+sfsu bucket remove extras
+```
+
+```powershell Remove using the rm alias
+sfsu bucket rm extras
+```
+
+```powershell Remove non-interactively
+sfsu bucket remove my-bucket --assume-yes
+```
+
+</CodeGroup>
+
+<Warning>
+Removing the `main` bucket will prevent Scoop from finding core packages like `git`, `7zip`, and `scoop` itself. sfsu will show an extra warning prompt before removing `main`, but proceed with care.
+</Warning>
+
+---
+
+## `sfsu bucket list`
+
+Lists every bucket currently installed in your Scoop environment along with its remote URL, the date of the most recent commit, and the total number of manifests it contains. The output is sorted alphabetically by bucket name.
+
+```
+sfsu bucket list [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--json` | — | flag | off | Emit the bucket list as a JSON array |
+
+Each entry includes:
+
+| Field | Description |
+|---|---|
+| `name` | Bucket directory name |
+| `source` | Remote git URL |
+| `updated` | Timestamp of the most recent commit |
+| `manifests` | Number of JSON manifests in the bucket |
+
+### Examples
+
+<CodeGroup>
+
+```powershell List all installed buckets
+sfsu bucket list
+```
+
+```powershell Machine-readable JSON output
+sfsu bucket list --json
+```
+
+</CodeGroup>
+
+---
+
+## `sfsu bucket known`
+
+Prints the official list of curated Scoop buckets along with their repository URLs. These are the same buckets you can add by name with `sfsu bucket add` without supplying a URL.
+
+```
+sfsu bucket known [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--json` | — | flag | off | Emit the known bucket list as a JSON array |
+
+### Examples
+
+<CodeGroup>
+
+```powershell Print the known bucket list
+sfsu bucket known
+```
+
+```powershell JSON output
+sfsu bucket known --json
+```
+
+</CodeGroup>
+
+<Tip>
+The known bucket list is embedded in sfsu at compile time from Scoop's upstream registry. It covers buckets such as `main`, `extras`, `versions`, `nirsoft`, `php`, `nerd-fonts`, and more.
+</Tip>
+
+---
+
+## `sfsu bucket update`
+
+Pulls the latest commits from the remote for every installed bucket in parallel using Rayon. After updating all buckets sfsu records the current time in your Scoop config as `last_update`. Pass `--changelog` to see a per-bucket summary of what changed.
+
+```
+sfsu bucket update [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--changelog` | `-c` | flag | off | Print commit messages for every bucket that received new commits |
+
+When `--changelog` is omitted sfsu updates silently and shows only a per-bucket ✅ progress indicator. When enabled, a titled section listing each new commit message is printed after all updates complete.
+
+### Examples
+
+<CodeGroup>
+
+```powershell Update all buckets silently
+sfsu bucket update
+```
+
+```powershell Update and show what changed
+sfsu bucket update --changelog
+```
+
+</CodeGroup>
+
+<Tip>
+`sfsu bucket update` runs bucket pulls in parallel across all installed buckets. On a typical setup with several buckets this is noticeably faster than `scoop update`.
+</Tip>
+
+<Note>
+`sfsu update` (the top-level update command) also updates buckets internally — it calls the same code path as `sfsu bucket update` and additionally updates the Scoop installation itself.
+</Note>
+
+---
+
+## `sfsu bucket outdated`
+
+Reports which of your installed buckets have commits on their remote that have not yet been pulled locally. Useful for a quick health check before deciding whether to run `sfsu bucket update`.
+
+```
+sfsu bucket outdated [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--json` | — | flag | off | Emit the list of outdated bucket names as a JSON array |
+
+If all buckets are current sfsu prints `All buckets up to date.` and exits cleanly with no output on stdout.
+
+### Examples
+
+<CodeGroup>
+
+```powershell Check which buckets are outdated
+sfsu bucket outdated
+```
+
+```powershell JSON list of outdated bucket names
+sfsu bucket outdated --json
+```
+
+</CodeGroup>
+
+<Warning>
+`sfsu bucket outdated` is **deprecated as of v2**. The replacement is `sfsu status`, which checks both outdated buckets and outdated packages in a single pass. The command is still available in v1 builds but will be removed in v2.
+</Warning>
+
+---
+
+## `sfsu bucket unused`
+
+Scans every installed bucket and identifies any that have no packages currently installed from them. This makes it easy to find buckets you added for a one-off install and forgot to remove, freeing you to clean them up with `sfsu bucket remove`.
+
+```
+sfsu bucket unused [options]
+```
+
+### Options
+
+| Flag | Short | Type | Default | Description |
+|---|---|---|---|---|
+| `--json` | — | flag | off | Emit the list of unused bucket names as a JSON array |
+
+If every bucket has at least one installed app sfsu prints `No unused buckets` and exits cleanly.
+
+### Examples
+
+<CodeGroup>
+
+```powershell List unused buckets
+sfsu bucket unused
+```
+
+```powershell JSON output for scripting
+sfsu bucket unused --json
+```
+
+</CodeGroup>
+
+<Tip>
+Combine `sfsu bucket unused` with `sfsu bucket remove` in a script to automatically prune orphaned buckets:
+
+```powershell
+sfsu bucket unused --json | ConvertFrom-Json | ForEach-Object {
+    sfsu bucket remove $_ --assume-yes
+}
+```
+</Tip>

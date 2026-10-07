@@ -1,0 +1,173 @@
+---
+title: "sfsu cache — View and Remove Download Cache Entries"
+sidebarTitle: "cache"
+description: "List or remove Scoop download cache entries by app name using regex or glob patterns. Supports JSON output and size reporting."
+---
+
+`sfsu cache` lets you inspect and clean up the files Scoop stores in its download cache directory. Every time Scoop downloads an installer or archive it saves the file there so it does not have to re-download on reinstalls. Over time this directory can grow large; `sfsu cache` gives you fast, pattern-based control over which entries to view or delete.
+
+## Cache Entry Format
+
+Each cache file is named using the pattern `name#version#url-hash`. sfsu calls these **known** entries and can display the name, version, size, and hash (URL) for each. Files that do not follow this naming convention are treated as **loose** entries and show a version and URL of `N/A`.
+
+## Subcommands
+
+`sfsu cache` exposes two subcommands. When called with no subcommand, it defaults to `sfsu cache list`.
+
+---
+
+### `sfsu cache list`
+
+**Aliases:** `sfsu cache show`, `sfsu cache ls`
+
+List cache entries whose app name matches the given pattern(s). If no pattern is provided, all entries are shown (the default pattern is `.*?`).
+
+#### Usage
+
+```powershell
+sfsu cache list [patterns...] [--glob] [--json]
+sfsu cache show [patterns...] [--glob] [--json]
+sfsu cache ls   [patterns...] [--glob] [--json]
+```
+
+#### Arguments
+
+| Argument | Description |
+|---|---|
+| `[patterns...]` | One or more regex (or glob) patterns for app names. Defaults to `.*?` (match all). |
+
+#### Flags
+
+| Flag | Description |
+|---|---|
+| `--glob` | Treat the pattern(s) as glob expressions instead of regex. |
+| `--json` | Emit results as JSON. |
+
+#### Output
+
+A table is printed with the following columns for each matched entry:
+
+| Column | Description |
+|---|---|
+| `name` | Application name as stored in the cache file name. |
+| `version` | Version string extracted from the cache file name. |
+| `size` | Human-readable file size (e.g. `45.2 MiB`). |
+| `url` | The URL hash extracted from the cache file name (`N/A` for loose entries). |
+
+A summary line is printed to stderr showing the total number of files and their combined size:
+
+```
+Total: 12 files, 324.7 MiB
+```
+
+#### Examples
+
+<CodeGroup>
+
+```powershell List all cache entries
+sfsu cache list
+```
+
+```powershell List entries for git
+sfsu cache list git
+```
+
+```powershell Glob pattern
+sfsu cache list --glob "python*"
+```
+
+```powershell JSON output
+sfsu cache list --json
+```
+
+</CodeGroup>
+
+---
+
+### `sfsu cache remove`
+
+**Alias:** `sfsu cache rm`
+
+Remove cache entries whose app name matches the given pattern(s). After deletion, sfsu prints the number of removed files and the total disk space freed.
+
+#### Usage
+
+```powershell
+sfsu cache remove [patterns...] [--glob]
+sfsu cache rm     [patterns...] [--glob]
+```
+
+#### Arguments
+
+| Argument | Description |
+|---|---|
+| `[patterns...]` | One or more regex (or glob) patterns for app names. **Required** — if no patterns are supplied, nothing is deleted. |
+
+#### Flags
+
+| Flag | Description |
+|---|---|
+| `--glob` | Treat the pattern(s) as glob expressions instead of regex. |
+
+#### Examples
+
+<CodeGroup>
+
+```powershell Remove all git cache entries
+sfsu cache remove git
+```
+
+```powershell Alias form
+sfsu cache rm git
+```
+
+```powershell Remove with a glob pattern
+sfsu cache rm --glob "python*"
+```
+
+```powershell Remove multiple apps
+sfsu cache remove git nodejs
+```
+
+</CodeGroup>
+
+---
+
+## Direct Invocation (Default to List)
+
+Calling `sfsu cache` with patterns and no subcommand is a shorthand for `sfsu cache list`:
+
+```powershell
+# Equivalent to: sfsu cache list git
+sfsu cache git
+```
+
+The `--glob` and `--json` flags are available in this form as well.
+
+---
+
+## Common Patterns
+
+<CodeGroup>
+
+```powershell Show all cached downloads
+sfsu cache
+```
+
+```powershell Check total cache size
+sfsu cache list
+```
+
+```powershell Remove a specific app's cache
+sfsu cache rm nodejs
+```
+
+```powershell Remove everything with a regex
+sfsu cache rm ".*"
+```
+
+</CodeGroup>
+
+<Warning>
+  Running `sfsu cache remove` (or `sfsu cache rm`) with **no pattern arguments** will not delete anything — sfsu prints a warning and exits. However, passing an explicit catch-all pattern such as `".*"` **will match every cache entry** and delete all cached downloads. Make sure your pattern is as specific as needed before running a removal.
+</Warning>

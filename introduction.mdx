@@ -1,0 +1,64 @@
+---
+title: "sfsu: Stupid Fast Scoop Utils for Windows"
+sidebarTitle: "Introduction"
+description: "sfsu is a Rust CLI that replaces the slowest Scoop commands with parallel implementations running 30–100× faster on Windows."
+---
+
+sfsu — **S**tupid **F**ast **S**coop **U**tils — is a companion tool for [Scoop](https://scoop.sh), the Windows package manager. Written entirely in Rust, sfsu reimplements Scoop's most time-consuming commands with parallel execution and native binaries, delivering speeds 30–100× faster than their PowerShell counterparts. sfsu is not a Scoop replacement: it reads Scoop's own configuration and bucket directories directly and layers on top of an existing Scoop installation.
+
+<Note>
+  sfsu is still under active development. It currently provides faster alternatives to most, but not all, Scoop commands. All breaking changes are reserved for v2.0 and will be preceded by proper deprecation warnings.
+</Note>
+
+## How sfsu Works
+
+sfsu reads the same configuration files and bucket directories that Scoop uses, so there is no separate state to keep in sync. Compute-heavy operations — scanning every bucket manifest for a search query, walking hundreds of installed packages for a status check — are parallelised using [Rayon](https://github.com/rayon-rs/rayon), Rust's data-parallelism library. The result is a native Windows executable that saturates available CPU cores instead of sequentially spawning PowerShell processes.
+
+The underlying Scoop data-access library is published separately as [**sprinkles**](https://github.com/winpax/sprinkles). If you want to build your own Scoop-aware tool or an alternative Scoop implementation, sprinkles provides the building blocks that power sfsu.
+
+## Commands
+
+sfsu provides fast replacements and additions across several areas of Scoop:
+
+| Area | Commands |
+|---|---|
+| **App management** | `app list`, `app cat`, `app info`, `app home`, `app cleanup` |
+| **Search** | `search` — parallel regex search across all buckets |
+| **Status & updates** | `status`, `outdated` |
+| **Bucket operations** | `bucket`, `unused-buckets` |
+| **Cache management** | `cache` |
+| **Dependency resolution** | `depends` |
+| **Export & checkup** | `export`, `checkup` |
+| **Security scanning** | `scan` (alias: `virustotal`) |
+| **Shell integration** | `hook` — transparent `scoop` command interception |
+
+## Shell Hooks
+
+sfsu ships a `hook` command that rewrites your shell's `scoop` function so that supported subcommands are transparently routed to sfsu while everything else falls back to the real `scoop`. Once the hook is active you can keep typing `scoop search`, `scoop list`, and `scoop status` as normal — sfsu runs under the hood.
+
+Hooks are supported in **PowerShell**, **Bash** (including WSL and MSYS2), **Zsh**, and **Nushell**. Individual hooks can be disabled per-command with `--disable`.
+
+## Sprinkles Library
+
+The data-access and manifest-parsing logic that sfsu depends on is extracted into a standalone library: [**sprinkles**](https://github.com/winpax/sprinkles). Sprinkles provides idiomatic Rust APIs for reading Scoop's config, iterating buckets and manifests, resolving install paths, and more. If you are building tooling around Scoop, sprinkles lets you skip re-implementing all of that plumbing.
+
+## License
+
+sfsu is dual-licensed under **Apache-2.0** and **MIT**. You may choose either licence when using or distributing the project.
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install sfsu via Scoop's extras bucket or build it from source with Cargo.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Get up and running in under five minutes with shell hooks and your first fast commands.
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/app">
+    Full reference for every sfsu subcommand, flag, and option.
+  </Card>
+  <Card title="Shell Hooks" icon="plug" href="/usage/hook">
+    Intercept `scoop` transparently in PowerShell, Bash, Zsh, and Nushell.
+  </Card>
+</CardGroup>

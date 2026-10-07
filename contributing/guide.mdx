@@ -1,0 +1,146 @@
+---
+title: "Contributing to sfsu: Guidelines and Process"
+sidebarTitle: "Guide"
+description: "How to report bugs, suggest features, and submit code contributions to sfsu. Covers commit conventions, code of conduct, and issue templates."
+---
+
+sfsu warmly welcomes contributions of every kind — bug reports, feature suggestions, documentation improvements, and code changes are all valued equally. Whether you have five minutes or five hours, there is a meaningful way to get involved. Before diving in, please take a moment to read the relevant section below so your contribution lands smoothly for everyone involved.
+
+<Note>
+  sfsu is currently **looking for maintainers**. The primary author no longer has regular access to a Windows machine and has limited bandwidth for active development. If you are interested in helping maintain the project, please reach out at [professional@maybejules.com](mailto:professional@maybejules.com) or join the [GitHub Discussion](https://github.com/orgs/winpax/discussions/958).
+</Note>
+
+## Code of Conduct
+
+All participants in the sfsu community are expected to follow the [sfsu Code of Conduct](https://github.com/winpax/sfsu/blob/trunk/CODE_OF_CONDUCT.md), which is adapted from the Contributor Covenant v2.0. The code pledges a harassment-free experience for everyone regardless of age, disability, ethnicity, gender identity, level of experience, nationality, race, religion, or sexual identity. Unacceptable behavior — including trolling, personal attacks, and publishing others' private information — may result in correction, warning, temporary ban, or permanent ban depending on severity. Report any violations to [professional@maybejules.com](mailto:professional@maybejules.com). All complaints are reviewed promptly and confidentially.
+
+## Discussions vs. Issues
+
+Before opening a GitHub Issue, consider using [GitHub Discussions](https://github.com/winpax/sfsu/discussions) for questions and open-ended conversations. Discussions are the right place to ask "how do I…?" or share ideas informally. Issues are best reserved for confirmed bugs, concrete feature requests, and actionable tasks. Also check the [FAQs](https://github.com/winpax/FAQs) — your question may already be answered there.
+
+## Reporting Bugs
+
+A well-written bug report saves everyone time. The goal is to give maintainers everything they need to reproduce and understand the problem without having to ask follow-up questions.
+
+### Before submitting
+
+- Confirm you are running **the latest version** of sfsu.
+- Check the [bug tracker](https://github.com/winpax/sfsu/issues?q=label%3Abug) to see if someone has already reported the same problem.
+- Search the internet and Stack Overflow — another community may have encountered and solved it.
+- Determine whether the issue is actually a bug in sfsu or a misconfiguration on your side (e.g., an incompatible environment component or version).
+
+### Information to collect
+
+Gather all of the following before filing a report:
+
+| Field | How to obtain |
+|---|---|
+| **sfsu version** | Run `sfsu --version` and copy the full output |
+| **Windows version** | `winver` from Run dialog, or `[System.Environment]::OSVersion` in PowerShell |
+| **Stack trace / error report** | Copy the full error output; upload to a pastebin and include the link |
+| **Your input and the output** | The exact command you ran and what sfsu printed in response |
+| **Steps to reproduce** | A numbered list another person can follow to reproduce the issue |
+| **Expected behavior** | What you expected sfsu to do |
+| **Actual behavior** | What it actually did |
+
+### Filing the report
+
+The [bug report template](https://github.com/winpax/sfsu/issues/new/choose) on GitHub captures all of the fields above. Use the title format `<COMMAND>: Brief issue description` (e.g., `search: panics when bucket name contains a dot`). Do not label the issue yourself — the project team will triage and label it after reviewing.
+
+Once filed, a maintainer will attempt to reproduce the issue. If reproduction steps are missing the issue will be tagged `needs-repro` and held until they are provided. Reproducible bugs are tagged `needs-fix` and become available for anyone to implement.
+
+<Warning>
+  **Never report security vulnerabilities in public GitHub Issues.** This includes any bug that involves sensitive information or could be exploited maliciously. Instead, send an encrypted email to [professional@maybejules.com](mailto:professional@maybejules.com) using the [PGP public key](https://github.com/winpax/sfsu/blob/trunk/CONTRIBUTING.md#pgp-public-key) published in the contributing guide.
+</Warning>
+
+## Suggesting Enhancements
+
+Enhancement suggestions — from small quality-of-life improvements to entirely new commands — are tracked as GitHub Issues.
+
+### Before submitting
+
+- Make sure you are on the **latest version**; the feature may already exist.
+- Read the [documentation](https://github.com/winpax/sfsu/wiki) to check whether the functionality is already available via a configuration option.
+- Search [existing issues](https://github.com/winpax/sfsu/issues) for prior suggestions. If one exists, add a comment rather than opening a duplicate.
+- Consider whether the idea fits sfsu's scope: a blazing-fast, Scoop-compatible utility layer. Features that benefit a broad set of users are more likely to be accepted than niche additions.
+
+### Writing a good enhancement request
+
+- Use a **clear and descriptive title** that identifies the suggestion at a glance.
+- Provide a **step-by-step description** of the desired behavior in as much detail as possible.
+- **Describe the current behavior** and contrast it with the **expected behavior** you want to see, and explain why.
+- Include **screenshots or animated GIFs** if they help illustrate the idea. [LICEcap](https://www.cockos.com/licecap/) can record GIFs on Windows.
+- Explain **why this would benefit most sfsu users**, and mention any other projects that have implemented something similar.
+
+## Your First Code Contribution
+
+New contributors are welcome. A good first step is to look through issues labelled `good first issue` or `needs-fix` on the [issue tracker](https://github.com/winpax/sfsu/issues).
+
+<Steps>
+  <Step title="Find an issue to work on">
+    Browse open issues on the [GitHub issue tracker](https://github.com/winpax/sfsu/issues). Comment on the issue to let others know you are working on it. For new ideas that do not yet have an issue, open one first and wait for feedback before investing significant time in implementation.
+  </Step>
+
+  <Step title="Fork and clone the repository">
+    Fork [winpax/sfsu](https://github.com/winpax/sfsu) on GitHub, then clone your fork locally. See the [Building guide](/contributing/building) for the full environment setup, including Rust, Just, and MSVC prerequisites.
+
+    ```powershell
+    git clone https://github.com/<your-username>/sfsu.git
+    cd sfsu
+    ```
+  </Step>
+
+  <Step title="Implement your change">
+    Create a feature branch off `trunk`, make your changes, and write or update any relevant tests. Keep commits focused and atomic — one logical change per commit makes review easier and history cleaner.
+
+    ```powershell
+    git checkout -b feat/my-improvement
+    ```
+  </Step>
+
+  <Step title="Install and run pre-commit hooks">
+    Before your first commit, install the pre-commit hooks. They enforce code formatting, linting, and commit-message conventions automatically on every commit and push.
+
+    ```powershell
+    just pre-commit
+    ```
+
+    The hooks run `rustfmt` and `clippy` checks and validate that your commit message follows [Conventional Commits](https://www.conventionalcommits.org/). If the hooks fail, fix the reported issues before committing.
+  </Step>
+
+  <Step title="Submit a pull request">
+    Push your branch to your fork and open a pull request against `winpax/sfsu`'s `trunk` branch. Fill in the PR description with a summary of what changed and a reference to the related issue (e.g., `Closes #123`). A maintainer will review and may request changes before merging.
+  </Step>
+</Steps>
+
+<Note>
+  By submitting a contribution you confirm that you hold the necessary rights to the content and agree that it may be provided under the project's license (MIT OR Apache-2.0).
+</Note>
+
+## Commit Messages
+
+sfsu enforces [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for all commit messages. This format makes the changelog and release notes easy to generate automatically and keeps the history readable at a glance.
+
+A conventional commit looks like this:
+
+```
+<type>(<optional scope>): <short description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Common types include `feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, and `test`. Examples:
+
+```
+feat(search): add --json flag support
+fix(cache): prevent cache rm from removing all entries by default
+docs: update building prerequisites
+```
+
+Install the pre-commit hooks with `just pre-commit` before you make your first commit. The `commit-msg` hook will reject commits that do not conform to the specification, so it is much easier to install the hooks upfront than to rewrite history later.
+
+## Joining the Project Team
+
+If you are interested in becoming a maintainer, contact [professional@maybejules.com](mailto:professional@maybejules.com). The project team requires a degree of established trust before granting membership to [winpax](https://github.com/winpax), so approval is not guaranteed — but the conversation is always welcome, especially given the project's current maintainer shortage.

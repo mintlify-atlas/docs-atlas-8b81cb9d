@@ -1,0 +1,136 @@
+---
+title: "sfsu checkup — Diagnose Common Scoop Setup Issues"
+sidebarTitle: "checkup"
+description: "Run sfsu checkup to verify your Scoop environment: git, main bucket, Windows Developer Mode, long paths, NTFS filesystem, and required helpers."
+---
+
+The `checkup` command inspects your local environment for the most common Scoop configuration problems and reports a pass/fail result for each check. Running it after a fresh Windows install or after moving Scoop to a new drive is a quick way to catch anything that would silently break package operations later.
+
+## Usage
+
+```powershell
+sfsu checkup [options]
+```
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Emit results as a JSON object instead of human-readable lines. |
+
+## Checks performed
+
+sfsu runs the following diagnostics in sequence and prints a ✅ or ❌ for each:
+
+### Git is installed
+
+Scoop delegates bucket management, self-updates, and package version tracking to `git`. sfsu resolves `git` on the system `PATH` using `which`; if it is missing, a remediation command is shown.
+
+**Fix:** `scoop install git`
+
+---
+
+### Main bucket is installed
+
+The `main` bucket ships Scoop's core package set. Most everyday packages live here; without it, even basic installs fail.
+
+**Fix:** `scoop bucket add main`
+
+---
+
+### Windows Developer Mode is enabled
+
+Developer Mode grants unprivileged processes the right to create symbolic links — an operation Scoop relies on for the `current` version junction. Without it, symlink-related operations can fail silently or produce cryptic errors.
+
+**Fix:** Enable via **Settings → Update & Security → For developers → Developer Mode**.
+
+---
+
+### Long paths are enabled
+
+Windows historically limits file paths to 260 characters (`MAX_PATH`). Scoop installs packages into nested directories that can exceed this limit on some tools. sfsu reads the registry key `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled` to verify the setting. Three outcomes are possible:
+
+| Status | Meaning |
+|--------|---------|
+| `Enabled` | ✅ Long paths are active |
+| `Disabled` | ❌ The registry key exists but is set to `0` |
+| `OldWindows` | ❌ Windows version < 10; long path support is unavailable |
+
+**Fix (run as Administrator):**
+
+```powershell
+Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1
+```
+
+---
+
+### Scoop directory uses NTFS filesystem
+
+Scoop requires an NTFS volume; FAT32, exFAT, and network drives are not supported. sfsu calls `GetVolumeInformationW` on the root of the Scoop installation path to confirm the filesystem type.
+
+**Fix:** Move your Scoop root to an NTFS drive and update the `root_path` variable in `~/.config/scoop/config.json`, or set the `$env:SCOOP` environment variable.
+
+---
+
+### Required helper programs
+
+Several Scoop operations depend on external binaries. sfsu checks for each of the following and reports any that are missing:
+
+| Helper | Executable | Purpose | Install command |
+|--------|-----------|---------|-----------------|
+| 7-Zip | `7z` | Unpacking most archive formats | `scoop install 7zip` |
+| Inno Setup Unpacker | `innounp` | Unpacking InnoSetup installers | `scoop install innounp` |
+| Dark (WiX) | `dark` | Unpacking WiX toolkit installers | `scoop install dark` or `scoop install wixtoolset` |
+
+## JSON output
+
+Passing `--json` produces a structured object that is easy to consume in scripts or CI pipelines:
+
+```json
+{
+  "git_installed": true,
+  "long_paths": "Enabled",
+  "main_bucket": true,
+  "windows_developer": false,
+  "windows_defender": false,
+  "missing_helpers": [
+    {
+      "exe": "innounp",
+      "name": "Inno Setup Unpacker",
+      "reason": "unpacking InnoSetup files",
+      "packages": ["innounp"]
+    }
+  ],
+  "scoop_ntfs": true
+}
+```
+
+`long_paths` is one of `"Enabled"`, `"Disabled"`, or `"OldWindows"`. `missing_helpers` is an empty array when all helpers are present.
+
+## Examples
+
+Run all checks with human-readable output:
+
+```powershell
+sfsu checkup
+```
+
+Emit JSON for use in scripts or CI:
+
+```powershell
+sfsu checkup --json
+```
+
+Enable long paths as Administrator and then verify:
+
+```powershell
+Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1
+sfsu checkup
+```
+
+<Note>
+  The Windows Defender exclusion check (whether the Scoop directory is
+  excluded from real-time scanning) requires Administrator elevation. When sfsu
+  is run as a standard user, the `windows_defender` field in JSON output is
+  always `false` and no Defender check is printed in human-readable mode.
+</Note>

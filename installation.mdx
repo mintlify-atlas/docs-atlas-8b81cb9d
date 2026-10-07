@@ -1,0 +1,124 @@
+---
+title: "Install sfsu on Windows"
+sidebarTitle: "Installation"
+description: "Install sfsu on Windows via Scoop extras bucket or build from source. Supports x86_64, i686, and arm64 architectures."
+---
+
+sfsu is a Windows-only tool that accelerates your existing Scoop workflow. The quickest path is to install it through Scoop itself — no extra tooling required. For contributors or those who want the latest unreleased changes, a source build using Cargo is also supported.
+
+<Note>
+  sfsu requires an existing [Scoop](https://scoop.sh) installation. It reads Scoop's configuration and bucket directories at runtime and will not function without them.
+</Note>
+
+## Recommended: Scoop Extras Bucket
+
+The official distribution channel for sfsu is Scoop's [extras](https://github.com/ScoopInstaller/Extras) bucket, which is maintained by the Scoop community and available on all standard Scoop installations.
+
+```powershell
+scoop bucket add extras
+scoop install sfsu
+```
+
+Scoop will download the correct pre-built binary for your architecture and add `sfsu` to your `PATH` automatically.
+
+## Alternative: winpax Bucket
+
+sfsu is also published to the [winpax/bucket](https://github.com/winpax/bucket) Scoop bucket, which tracks releases directly from the sfsu maintainers. This bucket may carry newer releases ahead of the extras bucket.
+
+```powershell
+scoop bucket add winpax https://github.com/winpax/bucket
+scoop install sfsu
+```
+
+## Architecture Support
+
+sfsu ships pre-built binaries for the three Windows architectures that Scoop supports:
+
+| Architecture | Description |
+|---|---|
+| `x86_64` | 64-bit Intel / AMD (most modern PCs) |
+| `i686` | 32-bit Intel / AMD |
+| `arm64` | 64-bit ARM (Surface Pro X, Snapdragon laptops) |
+
+Scoop selects the correct binary for your system automatically. If you are building from source, Cargo will compile for your host architecture by default.
+
+## Build from Source
+
+Building sfsu from source requires a few extra tools beyond a standard Rust installation. Follow the steps below carefully — the MSVC toolchain in particular is a common stumbling block on Windows.
+
+### Prerequisites
+
+Before you begin, ensure the following are installed and available on your `PATH`:
+
+- **Rust** — Install via [rustup](https://rustup.rs). sfsu pins its toolchain in `rust-toolchain.toml`; rustup will download the correct version automatically when you first run Cargo inside the project.
+  - **MSVC toolchain** — The Windows MSVC target (`x86_64-pc-windows-msvc`) is required. This means [Visual Studio](https://visualstudio.microsoft.com/) (or the standalone Build Tools) with the **Desktop development with C++** workload must be installed.
+- **Just** — A command runner used for project tasks. Install with `scoop install just` or from the [casey/just](https://github.com/casey/just) releases page.
+- **PowerShell** — PowerShell 7+ is recommended. Available from [github.com/PowerShell/PowerShell](https://github.com/PowerShell/PowerShell).
+- **pre-commit** — Used for contributor hooks. Install via `pip install pre-commit` or `scoop install pre-commit`.
+
+### Build Steps
+
+<Steps>
+  <Step title="Clone the repository">
+    ```powershell
+    git clone https://github.com/winpax/sfsu.git
+    cd sfsu
+    ```
+  </Step>
+  <Step title="Run initial setup">
+    The `just setup` command installs pre-commit hooks and performs any other first-time configuration.
+
+    ```powershell
+    just setup
+    ```
+  </Step>
+  <Step title="Compile with Cargo">
+    A release build applies link-time optimisation and single-codegen-unit compilation for maximum performance, matching the distributed binaries.
+
+    <CodeGroup>
+      ```powershell Debug build
+      cargo build
+      ```
+      ```powershell Release build
+      cargo build --release
+      ```
+    </CodeGroup>
+
+    The resulting binary is written to `target\debug\sfsu.exe` or `target\release\sfsu.exe` respectively.
+  </Step>
+  <Step title="Add to PATH (optional)">
+    To use the locally built binary system-wide, copy it somewhere on your `PATH` or add the Cargo output directory directly.
+
+    ```powershell
+    # Copy release binary to a directory already on PATH
+    Copy-Item target\release\sfsu.exe "$env:USERPROFILE\scoop\shims\sfsu.exe"
+    ```
+  </Step>
+</Steps>
+
+## Verify the Installation
+
+Run the following command to confirm sfsu is installed and accessible:
+
+```powershell
+sfsu --version
+```
+
+You should see output similar to:
+
+```
+sfsu 1.18.1
+```
+
+If the command is not found, make sure Scoop's `shims` directory (`%USERPROFILE%\scoop\shims`) is on your `PATH`, or that the directory containing your manually built binary is listed.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Set up shell hooks and run your first fast Scoop commands in minutes.
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/app">
+    Browse every command sfsu provides and their available flags.
+  </Card>
+</CardGroup>

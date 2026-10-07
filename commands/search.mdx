@@ -1,0 +1,130 @@
+---
+title: "sfsu search — Fast Parallel Package Search"
+sidebarTitle: "search"
+description: "Search for Scoop packages by name or binary using Rust Regex across all buckets in parallel. Supports installed-only, case-sensitive, and JSON output modes."
+---
+
+`sfsu search` scans every installed Scoop bucket in parallel using Rust's regex engine, matching packages by name, by the binaries they expose, or both. It is a drop-in replacement for `scoop search` but completes in a fraction of the time, especially when you have many buckets installed.
+
+## Usage
+
+```powershell
+sfsu search <pattern> [options]
+```
+
+## Arguments
+
+| Argument | Description |
+|---|---|
+| `<pattern>` | A [Rust regex](https://docs.rs/regex/latest/regex/) pattern to search for. Case-insensitive by default. |
+
+## Flags
+
+| Flag | Short | Description |
+|---|---|---|
+| `--case-sensitive` | `-c` | Match the pattern case-sensitively. By default the search is case-insensitive (the `(?i)` flag is prepended automatically). |
+| `--bucket <name>` | `-b` | Restrict the search to a single named bucket. |
+| `--installed` | `-i` | Only return packages that are currently installed. |
+| `--mode <mode>` | `-m` | Control what is matched against the pattern (see [Search Modes](#search-modes) below). |
+| `--json` | | Emit results as a JSON object keyed by bucket name. |
+
+## Search Modes
+
+The `--mode` flag accepts one of three values:
+
+| Value | Description |
+|---|---|
+| `name` | Match against package names only **(default)** |
+| `binary` | Match against the binaries (executables) a package exposes only |
+| `both` | Match against both package names and binaries |
+
+When a package is matched via its binaries, the matching binary names are printed indented beneath the package entry.
+
+## Output Format
+
+Each matching package is displayed as:
+
+```
+'<bucket>' bucket:
+  <package-name> (<version>) [installed]
+    <matching-binary>
+```
+
+- `[installed]` is shown only when the package is currently installed.
+- When the search pattern is an exact match for a package name, that name is **bold**.
+- Matching binary names are listed indented beneath the package entry.
+- Results are sorted alphabetically by bucket name.
+
+## JSON Output
+
+With `--json`, the output is a pretty-printed JSON object mapping each bucket name to an array of match objects:
+
+```json
+{
+  "main": [
+    {
+      "name": "git",
+      "bucket": "main",
+      "version": "2.44.0",
+      "installed": true,
+      "bins": []
+    }
+  ]
+}
+```
+
+## Examples
+
+<CodeGroup>
+
+```powershell Basic search
+sfsu search git
+```
+
+```powershell Search in a specific bucket
+sfsu search --bucket extras python
+```
+
+```powershell Only show installed packages
+sfsu search --installed node
+```
+
+```powershell Case-sensitive search
+sfsu search --case-sensitive Git
+```
+
+```powershell Search by binary name
+sfsu search --mode binary python
+```
+
+```powershell Search both names and binaries
+sfsu search --mode both py
+```
+
+```powershell JSON output
+sfsu search git --json
+```
+
+</CodeGroup>
+
+## Deprecated Syntax
+
+The `bucket/package` shorthand (e.g. `extras/git`) is **deprecated**. Use `--bucket` and a plain pattern instead:
+
+```powershell
+# Deprecated — will emit a warning
+sfsu search extras/git
+
+# Preferred
+sfsu search --bucket extras git
+```
+
+If both `bucket/package` syntax and `--bucket` are supplied simultaneously, the `--bucket` flag takes precedence and an additional warning is shown.
+
+<Note>
+  `sfsu search` uses [Rust Regex](https://docs.rs/regex/latest/regex/) syntax, which supports a rich set of features including character classes, anchors, and lookaheads. Refer to the full syntax reference at [docs.rs/regex](https://docs.rs/regex/latest/regex/) if your pattern is not matching as expected. Note that backslashes must be escaped in PowerShell strings (e.g. `"\\d+"`).
+</Note>
+
+<Tip>
+  `sfsu search --installed <pattern>` is a much faster replacement for `scoop list <pattern>`. Because sfsu scans manifests in parallel, it stays snappy even with dozens of buckets and hundreds of installed packages.
+</Tip>

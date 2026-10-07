@@ -1,0 +1,150 @@
+---
+title: "Global Flags Available on Every sfsu Command"
+sidebarTitle: "Global Flags"
+description: "Reference for the global CLI flags accepted by every sfsu command: --json, --verbose, --arch, --global, --no-color, --assume-yes, --disable-git."
+---
+
+Every sfsu subcommand — `search`, `status`, `bucket`, and the rest — accepts a common set of global flags that control output formatting, architecture targeting, environment context, and runtime behaviour. You can place these flags before or after the subcommand name on the command line. The table and detailed entries below document every global flag sourced directly from the `Args` struct in sfsu's `main.rs`.
+
+## Quick Reference
+
+| Flag | Short | Env var | Default | Description |
+|---|---|---|---|---|
+| `--no-color` | — | `NO_COLOR` | `false` | Disable all terminal colour and formatting |
+| `--json` | — | — | `false` | Print raw JSON output instead of human-readable text |
+| `--verbose` | `-v` | — | `false` | Show more detail in command output |
+| `--debug` | — | — | `false` | Enable debug-level logging |
+| `--disable-git` | — | `DISABLE_GIT` | `false` | Disable internal git calls; allows sfsu to run without git installed |
+| `--global` | `-g` | — | `false` | Use the global (system-wide) Scoop context _(contexts feature only)_ |
+| `--arch` | — | — | System arch | Preferred architecture for commands that support it |
+| `--assume-yes` | `-y` | — | `false` | Automatically answer "yes" to all interactive prompts |
+
+## Detailed Flag Reference
+
+<ParamField query="--no-color" type="bool" default="false">
+  Disables all terminal colours and ANSI formatting in sfsu's output. Useful when piping output to files, other tools, or CI environments that do not handle escape codes.
+
+  sfsu also respects the standard `NO_COLOR` environment variable — setting it to any non-empty value is equivalent to passing `--no-color`. Color is also disabled automatically when standard output is not a TTY (e.g. when piping).
+
+  ```powershell
+  sfsu search git --no-color
+  ```
+</ParamField>
+
+<ParamField query="--json" type="bool" default="false">
+  Switches the output format from the default human-readable presentation to raw JSON. Not every subcommand supports JSON output; for those that do not, this flag is silently ignored.
+
+  ```powershell
+  sfsu status --json
+  ```
+
+  ```powershell
+  sfsu search neovim --json
+  ```
+</ParamField>
+
+<ParamField query="--verbose" type="bool" default="false">
+  Causes commands to emit additional information that is normally suppressed. The exact extra output varies by subcommand; consult individual command pages for details.
+
+  Short form: `-v`
+
+  ```powershell
+  sfsu checkup --verbose
+  ```
+</ParamField>
+
+<ParamField query="--debug" type="bool" default="false">
+  Enables debug-level log messages. These messages are written to sfsu's log file and to stderr, and include internal state transitions, file paths resolved, and timing information. Intended for troubleshooting unexpected behaviour or reporting bugs.
+
+  ```powershell
+  sfsu status --debug
+  ```
+
+  <Note>
+    In debug builds of sfsu (compiled with `debug_assertions`), debug logging is always enabled regardless of this flag.
+  </Note>
+</ParamField>
+
+<ParamField query="--disable-git" type="bool" default="false">
+  Prevents sfsu from invoking `git` internally. This allows sfsu to run correctly on machines that do not have git installed at all. Some operations that rely on git — such as reading commit history for update logs or walking bucket repositories — may be skipped or may fall back to slower alternatives, so there can be a performance cost.
+
+  The `DISABLE_GIT` environment variable provides the same effect when set to any non-empty value, which is convenient for CI pipelines or restricted environments.
+
+  ```powershell
+  sfsu status --disable-git
+  ```
+
+  ```powershell
+  # Via environment variable
+  $env:DISABLE_GIT = "1"
+  sfsu status
+  ```
+</ParamField>
+
+<ParamField query="--global" type="bool" default="false">
+  Switches sfsu to the **global Scoop context**, which reads apps installed system-wide into `$env:ProgramData\scoop` rather than the per-user installation at `$env:USERPROFILE\scoop`.
+
+  Short form: `-g`
+
+  <Note>
+    This flag is only available when sfsu is compiled with the `contexts` feature enabled. Releases on the Scoop `extras` bucket include this feature. If the flag is absent from your build, sfsu always operates in the user context.
+  </Note>
+
+  ```powershell
+  sfsu list --global
+  sfsu status -g
+  ```
+</ParamField>
+
+<ParamField query="--arch" type="string" default="System architecture">
+  Specifies the CPU architecture to use for commands that are architecture-aware (for example, installing or inspecting app manifests that ship separate binaries for different architectures).
+
+  Accepted values:
+
+  | Value | Meaning |
+  |---|---|
+  | `64bit` | 64-bit x86 (x86\_64). Default on most modern Windows systems. |
+  | `32bit` | 32-bit x86 (i686). |
+  | `arm64` | 64-bit ARM (AArch64). |
+
+  The default is the architecture of the machine running sfsu, which in the current release is always `64bit`.
+
+  ```powershell
+  sfsu app info 7zip --arch 32bit
+  ```
+
+  ```powershell
+  sfsu app info nodejs --arch arm64
+  ```
+</ParamField>
+
+<ParamField query="--assume-yes" type="bool" default="false">
+  Automatically confirms any interactive yes/no prompt that sfsu would normally pause and wait for user input on. Useful in unattended scripts and automation workflows.
+
+  Short form: `-y`
+
+  ```powershell
+  sfsu app cleanup --assume-yes
+  ```
+</ParamField>
+
+## Environment Variables
+
+Two flags have corresponding environment variable equivalents that can be set once instead of passing the flag on every invocation:
+
+<CodeGroup>
+```powershell PowerShell — per-session
+$env:NO_COLOR    = "1"   # equivalent to --no-color
+$env:DISABLE_GIT = "1"   # equivalent to --disable-git
+```
+
+```powershell PowerShell — persistent (user profile)
+[System.Environment]::SetEnvironmentVariable("NO_COLOR",    "1", "User")
+[System.Environment]::SetEnvironmentVariable("DISABLE_GIT", "1", "User")
+```
+
+```bash Bash / Zsh (WSL · MSYS2)
+export NO_COLOR=1
+export DISABLE_GIT=1
+```
+</CodeGroup>

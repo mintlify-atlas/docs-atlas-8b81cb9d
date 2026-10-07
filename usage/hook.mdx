@@ -1,0 +1,190 @@
+---
+title: "Set Up Shell Hooks for Transparent sfsu Integration"
+sidebarTitle: "Shell Hooks"
+description: "Configure sfsu shell hooks to intercept scoop commands in PowerShell, Bash, Zsh (WSL/MSYS2), and Nushell automatically."
+---
+
+Shell hooks let you keep typing `scoop` as you always have while sfsu silently handles the commands it knows how to accelerate. When you invoke a supported command like `scoop search` or `scoop status`, the hook delegates the call to `sfsu` instead of Scoop's PowerShell scripts — giving you a 30–100× speedup with no change to your muscle memory. For any command that sfsu does not cover, the hook transparently falls through to the real `scoop` executable.
+
+## How Hooks Work
+
+The `sfsu hook` command prints shell function or alias code to standard output. You evaluate or source that output in your shell's startup file so that a `scoop` function is defined for your session. When you call `scoop <subcommand>`:
+
+1. The shell function inspects the first argument.
+2. If the subcommand is in sfsu's supported list, execution is forwarded to `sfsu.exe`.
+3. For everything else, the original `scoop.ps1` (or `$SCOOP_EXEC`) is called unchanged.
+
+Because the hook is just a shell function, no system files are modified — you can remove it at any time by commenting out the line in your profile.
+
+## Shell Setup
+
+<Tabs>
+  <Tab title="PowerShell">
+    Add the following line to your PowerShell profile (`$PROFILE`). It runs `sfsu hook`, captures the output, and evaluates it as PowerShell code in the current session.
+
+    ```powershell
+    Invoke-Expression (&sfsu hook)
+    ```
+
+    <Note>
+      To find your profile path, run `$PROFILE` in a PowerShell prompt. Common locations are `~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` (PowerShell 7) and `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` (Windows PowerShell 5). If the file does not exist yet, create it with `New-Item -Path $PROFILE -Force`.
+    </Note>
+
+    The generated function looks like this at runtime:
+
+    ```powershell
+    function scoop { switch ($args[0]) {
+      'app'      { return sfsu.exe app      @($args | Select-Object -Skip 1) }
+      'cleanup'  { return sfsu.exe app cleanup @($args | Select-Object -Skip 1) }
+      'search'   { return sfsu.exe search   @($args | Select-Object -Skip 1) }
+      'bucket'   { return sfsu.exe bucket   @($args | Select-Object -Skip 1) }
+      'depends'  { return sfsu.exe depends  @($args | Select-Object -Skip 1) }
+      'status'   { return sfsu.exe status   @($args | Select-Object -Skip 1) }
+      'export'   { return sfsu.exe export   @($args | Select-Object -Skip 1) }
+      'checkup'  { return sfsu.exe checkup  @($args | Select-Object -Skip 1) }
+      'cache'    { return sfsu.exe cache    @($args | Select-Object -Skip 1) }
+      'virustotal' { return sfsu.exe scan   @($args | Select-Object -Skip 1) }
+      default    { scoop.ps1 @args }
+    }}
+    ```
+  </Tab>
+
+  <Tab title="Bash / Zsh (WSL · MSYS2)">
+    Add the following line to your `~/.bashrc` or `~/.zshrc`. The `--shell bash` flag switches the output format to POSIX shell syntax (both Bash and Zsh are accepted values).
+
+    ```bash
+    source <(sfsu.exe hook --shell bash)
+    ```
+
+    For Zsh, the flag value `zsh` is also accepted:
+
+    ```zsh
+    source <(sfsu.exe hook --shell zsh)
+    ```
+
+    The generated function captures the path to the real `scoop` executable first so the fallback case always works, even in `PATH`-constrained environments:
+
+    ```bash
+    SCOOP_EXEC=$(which scoop)
+    scoop () {
+    case $1 in
+    (app)       sfsu.exe app       ${@:2} ;;
+    (cleanup)   sfsu.exe app cleanup ${@:2} ;;
+    (search)    sfsu.exe search    ${@:2} ;;
+    (bucket)    sfsu.exe bucket    ${@:2} ;;
+    (depends)   sfsu.exe depends   ${@:2} ;;
+    (status)    sfsu.exe status    ${@:2} ;;
+    (export)    sfsu.exe export    ${@:2} ;;
+    (checkup)   sfsu.exe checkup   ${@:2} ;;
+    (cache)     sfsu.exe cache     ${@:2} ;;
+    (virustotal) sfsu.exe scan     ${@:2} ;;
+    (*)         $SCOOP_EXEC $@     ;;
+    esac
+    }
+    ```
+
+    <Note>
+      In MSYS2 you call `sfsu.exe` explicitly because `sfsu` without the extension may not resolve correctly on Windows paths exposed through the MSYS2 layer.
+    </Note>
+  </Tab>
+
+  <Tab title="Nushell">
+    Nushell does not support process-substitution (`source <(...)`), so you first save the hook output to a file and then source that file from `config.nu`.
+
+    **Step 1 — generate and save the hook file:**
+
+    ```nu
+    sfsu hook --shell nu | save -f ~/.cache/sfsu/sfsu.nu
+    ```
+
+    **Step 2 — source it in your `config.nu`** (found at `$nu.config-path`):
+
+    ```nu
+    source ~/.cache/sfsu/sfsu.nu
+    ```
+
+    The generated definitions use Nushell's `def --wrapped` so that all arguments are forwarded correctly:
+
+    ```nu
+    def --wrapped "scoop app"      [...rest] { sfsu app       ...$rest }
+    def --wrapped "scoop cleanup"  [...rest] { sfsu app cleanup ...$rest }
+    def --wrapped "scoop search"   [...rest] { sfsu search    ...$rest }
+    def --wrapped "scoop bucket"   [...rest] { sfsu bucket    ...$rest }
+    def --wrapped "scoop depends"  [...rest] { sfsu depends   ...$rest }
+    def --wrapped "scoop status"   [...rest] { sfsu status    ...$rest }
+    def --wrapped "scoop export"   [...rest] { sfsu export    ...$rest }
+    def --wrapped "scoop checkup"  [...rest] { sfsu checkup   ...$rest }
+    def --wrapped "scoop cache"    [...rest] { sfsu cache     ...$rest }
+    def --wrapped "scoop virustotal" [...rest] { sfsu scan    ...$rest }
+    ```
+
+    <Note>
+      Re-run the save command whenever you upgrade sfsu to pick up any newly hooked commands.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Full Hook Command Signature
+
+```
+sfsu hook [OPTIONS]
+
+Options:
+  -D, --disable <CMD>...   Disable the hook for one or more specific commands
+  -E, --enabled <CMD>...   Enable hooks for only the specified commands (exclusive)
+  -s, --shell <SHELL>      Target shell [default: powershell]
+                           [possible values: powershell, bash, zsh, nu]
+```
+
+## Hookable Commands
+
+The following Scoop subcommands are intercepted by sfsu when hooks are active. Any command not in this list is passed directly to the original Scoop.
+
+| Scoop command invoked | sfsu command executed | Notes |
+|---|---|---|
+| `scoop app` | `sfsu app` | App management subcommands |
+| `scoop cleanup` | `sfsu app cleanup` | Clean up old app versions |
+| `scoop search` | `sfsu search` | Fast manifest search |
+| `scoop bucket` | `sfsu bucket` | Bucket management |
+| `scoop depends` | `sfsu depends` | Dependency resolution |
+| `scoop status` | `sfsu status` | Installed app status |
+| `scoop export` | `sfsu export` | Export installed app list |
+| `scoop checkup` | `sfsu checkup` | System health checks |
+| `scoop cache` | `sfsu cache` | Download cache management |
+| `scoop virustotal` | `sfsu scan` | VirusTotal file scanning |
+
+<Note>
+  The `hook`, `credits`, and `debug` commands are intentionally excluded from the hookable set. Hooking them would create circular or meaningless call chains — for example, `scoop hook` would recurse back into the hook function itself.
+</Note>
+
+## Disabling Specific Hooks
+
+If you want sfsu to skip a particular command and let Scoop handle it natively, pass `--disable` (short: `-D`) with the command name. You can repeat the flag for multiple commands.
+
+```powershell
+# PowerShell — disable the 'list' hook so Scoop's built-in list is used
+Invoke-Expression (&sfsu hook --disable list)
+```
+
+```bash
+# Bash/Zsh — disable the 'search' hook
+source <(sfsu.exe hook --shell bash --disable search)
+```
+
+## Enabling Only Specific Hooks
+
+If you prefer an allow-list approach — only hooking a handful of commands and leaving the rest to Scoop — use `--enabled` (short: `-E`). When any value is provided, only the listed commands are hooked; everything else falls back to Scoop.
+
+```powershell
+# Only accelerate 'search' and 'status'; everything else goes to Scoop
+Invoke-Expression (&sfsu hook --enabled search --enabled status)
+```
+
+```bash
+# Bash equivalent
+source <(sfsu.exe hook --shell bash --enabled search --enabled status)
+```
+
+<Note>
+  `--disable` and `--enabled` can be combined. sfsu first builds the enabled set from `--enabled` (or all hookable commands if `--enabled` is omitted), then removes any entries listed in `--disable`.
+</Note>

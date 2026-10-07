@@ -1,0 +1,110 @@
+---
+title: "sfsu export — Export Installed Apps and Buckets to JSON"
+sidebarTitle: "export"
+description: "Export your installed Scoop apps and configured buckets as a portable JSON file. Optionally include your Scoop configuration."
+---
+
+The `export` command serialises your entire Scoop environment — every installed application, every configured bucket, and optionally your Scoop configuration — into a single, pretty-printed JSON document on stdout. Use it to back up your setup, migrate to a new machine, or share a reproducible environment with teammates.
+
+## Usage
+
+```powershell
+sfsu export [options]
+```
+
+## Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--config` | `-c` | Include the full Scoop configuration object in the export alongside `apps` and `buckets`. |
+
+## Output format
+
+The output is a JSON object with two top-level keys that are always present, plus an optional third:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `apps` | array | Every installed app, sorted alphabetically by name. |
+| `buckets` | array | Every configured bucket with its remote URL and manifest count. |
+| `config` | object | Your Scoop config — only present when `--config` is passed. |
+
+### App object
+
+Each entry in `apps` uses **PascalCase** keys to match Scoop's native export format:
+
+| Field | Description |
+|-------|-------------|
+| `Name` | Package name |
+| `Source` | Bucket the package was installed from |
+| `Updated` | ISO 8601 timestamp of the last update (microsecond precision) |
+| `Version` | Currently installed version string |
+| `Info` | Additional notes from the manifest |
+
+### Bucket object
+
+Each entry in `buckets` also uses **PascalCase** keys:
+
+| Field | Description |
+|-------|-------------|
+| `Name` | Bucket name |
+| `Source` | Remote git URL |
+| `Updated` | ISO 8601 timestamp of the most recent commit |
+| `Manifests` | Number of manifests in the bucket |
+
+### Sample output
+
+```json
+{
+  "apps": [
+    {
+      "Name": "git",
+      "Source": "main",
+      "Updated": "2024-11-01T12:34:56.789000+00:00",
+      "Version": "2.47.0",
+      "Info": ""
+    }
+  ],
+  "buckets": [
+    {
+      "Name": "main",
+      "Source": "https://github.com/ScoopInstaller/Main",
+      "Updated": "2024-11-01T10:00:00+00:00",
+      "Manifests": 1234
+    }
+  ]
+}
+```
+
+## Examples
+
+Export apps and buckets to stdout:
+
+```powershell
+sfsu export
+```
+
+Include your Scoop configuration in the export:
+
+```powershell
+sfsu export --config
+```
+
+Redirect the output to a file for safekeeping or migration:
+
+```powershell
+sfsu export > my-scoop-setup.json
+sfsu export --config > my-scoop-setup-full.json
+```
+
+<Tip>
+  Before exporting, run `sfsu status` to check whether any apps are outdated.
+  Exporting before updating means the JSON will capture older version strings,
+  which may cause issues if you use the file to recreate your environment on a
+  fresh machine.
+</Tip>
+
+<Note>
+  Apps are sorted alphabetically (case-insensitive) in the output, matching the
+  order produced by `scoop export`. This makes diff-ing two export files
+  straightforward.
+</Note>

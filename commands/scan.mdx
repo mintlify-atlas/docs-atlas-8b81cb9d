@@ -1,0 +1,112 @@
+---
+title: "sfsu scan — Scan Package Files with VirusTotal"
+sidebarTitle: "scan"
+description: "Scan Scoop package installer hashes and download URLs against the VirusTotal API. Requires a VirusTotal API key in Scoop config."
+---
+
+The `scan` command (also available as `sfsu virustotal`) queries the VirusTotal API for every installer hash or download URL found in one or more package manifests. Results are colour-coded — green for clean files, yellow for suspicious detections, and red for packages that cross the malicious threshold — giving you a fast, at-a-glance safety check before or after installation.
+
+<Warning>
+  `sfsu scan` requires a **VirusTotal API key**. Without one the command will
+  exit immediately. Obtain a free key at
+  [virustotal.com/gui/my-apikey](https://www.virustotal.com/gui/my-apikey) and
+  register it with Scoop:
+
+  ```powershell
+  scoop config virustotal_api_key <YOUR_API_KEY>
+  ```
+</Warning>
+
+<Note>
+  This command is currently in **beta** (`BETA = true`). The free VirusTotal
+  tier is rate-limited to **4 requests per 5 seconds**; sfsu enforces this
+  automatically with a built-in rate limiter, so large scans will take a moment
+  to complete.
+</Note>
+
+## Usage
+
+```powershell
+sfsu scan <apps...> [options]
+sfsu virustotal <apps...> [options]
+```
+
+## Arguments
+
+<ParamField path="apps" type="string[]">
+  One or more package references to scan. Accepts plain names (`git`) or
+  fully-qualified `bucket/name` references. Omit when using `--all`.
+</ParamField>
+
+## Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--all` | `-A` | Scan every currently installed app instead of a named list. |
+| `--bucket <name>` | `-b` | Restrict the manifest search to a single bucket. |
+| `--case-sensitive` | `-c` | Match app names case-sensitively. |
+| `--filter <level>` | | Only display results at or **above** the given status level. See [Status levels](#status-levels) below. |
+| `--arch <arch>` | | Target a specific architecture when resolving installer hashes/URLs. |
+| `--json` | | Emit results as JSON instead of coloured text. |
+
+## Status levels
+
+sfsu derives a status from the ratio of detections reported by VirusTotal:
+
+| Level | Condition | Terminal colour |
+|-------|-----------|-----------------|
+| `undetected` | Zero engines flagged the file | 🟢 Green |
+| `suspicious` | At least one detection, but ≤ 10 % of engines | 🟡 Yellow |
+| `malicious` | More than 10 % of engines flagged the file | 🔴 Red |
+
+Pass one of these values to `--filter` to suppress lower-severity results. For example, `--filter suspicious` hides all `undetected` output and shows only `suspicious` and `malicious` entries.
+
+## Configuration
+
+The API key is read from the Scoop configuration file (`~/.config/scoop/config.json`) via the `virustotal_api_key` field. Set it once and sfsu picks it up automatically on every subsequent run:
+
+```powershell
+scoop config virustotal_api_key <YOUR_API_KEY>
+```
+
+## How it works
+
+For each resolved manifest sfsu checks whether the manifest declares a file hash. If a hash is available it is submitted to the VirusTotal `/files/{id}` endpoint; otherwise the installer download URL is submitted to `/urls/{id}`. Both code paths go through the same rate limiter and produce output in the same format.
+
+Each result line follows the pattern:
+
+```
+<bucket>/<name>: <detected>/<total>. See more at https://www.virustotal.com/gui/url/<hash>
+```
+
+## Examples
+
+Scan a single package:
+
+```powershell
+sfsu scan git
+```
+
+Scan every installed app:
+
+```powershell
+sfsu scan --all
+```
+
+Show only suspicious and malicious results:
+
+```powershell
+sfsu scan git --filter suspicious
+```
+
+Scan with JSON output for scripting:
+
+```powershell
+sfsu scan git --json
+```
+
+Scope the scan to a specific bucket:
+
+```powershell
+sfsu scan git --bucket main
+```
