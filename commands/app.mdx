@@ -83,10 +83,10 @@ sfsu app info <package> [options]
 
 | Flag | Short | Type | Default | Description |
 |---|---|---|---|---|
-| `--single` / `-s` | `-s` | flag | off | When multiple matches exist, show only the most recent version |
-| `--hide-emails` / `-E` | `-E` | flag | off | Hide contributor email addresses from `Updated by` output |
+| `--single` | `-s` | flag | off | When multiple matches exist, show only the most recent version |
+| `--hide-emails` | `-E` | flag | off | Hide contributor email addresses from `Updated by` output |
 | `--json` | — | flag | off | Emit the package info as JSON |
-| `--verbose` | — | flag | off | Show extended fields such as `Updated at` and `Updated by` |
+| `--verbose` | `-v` | flag | off | Show extended fields such as `Updated at` and `Updated by` |
 
 The displayed fields include: name, bucket, version, description, website, license, binaries, shortcuts, notes, and installation status. Pass `--verbose` to also show the last commit author and timestamp pulled from the bucket's git history.
 
@@ -207,7 +207,7 @@ sfsu app cleanup [apps...] [options]
 | `--all` | `-a` | flag | off | Clean up every installed app |
 | `--cache` | `-k` | flag | off | Also remove cached installer files for old versions |
 | `--dry-run` | — | flag | off | Print what would be removed without deleting anything |
-| `--assume-yes` | — | flag | off | Skip confirmation prompts |
+| `--assume-yes` | `-y` | flag | off | Skip confirmation prompts |
 
 ### Examples
 

@@ -94,13 +94,13 @@ Because the hook is just a shell function, no system files are modified — you 
     **Step 1 — generate and save the hook file:**
 
     ```nu
-    sfsu hook --shell nu | save -f ~/.cache/sfsu/sfsu.nu
+    sfsu hook --shell nu | save -f ~/.cache/sfsu.nu
     ```
 
     **Step 2 — source it in your `config.nu`** (found at `$nu.config-path`):
 
     ```nu
-    source ~/.cache/sfsu/sfsu.nu
+    source ~/.cache/sfsu.nu
     ```
 
     The generated definitions use Nushell's `def --wrapped` so that all arguments are forwarded correctly:

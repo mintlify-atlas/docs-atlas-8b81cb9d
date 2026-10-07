@@ -66,7 +66,7 @@ With `--json`, sfsu outputs a single JSON object with three top-level keys:
 | Key | Type | Description |
 |---|---|---|
 | `scoop` | `boolean` | `true` if Scoop itself is outdated. |
-| `buckets` | `string[]` | Names of buckets that have pending upstream commits. Only populated when `--verbose` is used or `--only buckets` is specified. |
+| `buckets` | `string[]` | Names of buckets that have pending upstream commits. Always populated when `--json` is used. |
 | `packages` | `object[]` | Array of package info objects for apps that are not fully up to date. |
 
 ## Examples

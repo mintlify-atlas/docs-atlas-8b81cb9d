@@ -45,7 +45,7 @@ sfsu virustotal <apps...> [options]
 | `--all` | `-A` | Scan every currently installed app instead of a named list. |
 | `--bucket <name>` | `-b` | Restrict the manifest search to a single bucket. |
 | `--case-sensitive` | `-c` | Match app names case-sensitively. |
-| `--filter <level>` | | Only display results at or **above** the given status level. See [Status levels](#status-levels) below. |
+| `--filter <level>` | | Only display results **strictly above** the given status level. See [Status levels](#status-levels) below. |
 | `--arch <arch>` | | Target a specific architecture when resolving installer hashes/URLs. |
 | `--json` | | Emit results as JSON instead of coloured text. |
 
@@ -59,7 +59,7 @@ sfsu derives a status from the ratio of detections reported by VirusTotal:
 | `suspicious` | At least one detection, but ≤ 10 % of engines | 🟡 Yellow |
 | `malicious` | More than 10 % of engines flagged the file | 🔴 Red |
 
-Pass one of these values to `--filter` to suppress lower-severity results. For example, `--filter suspicious` hides all `undetected` output and shows only `suspicious` and `malicious` entries.
+Pass one of these values to `--filter` to suppress results at or below that level. For example, `--filter undetected` hides clean results and shows only `suspicious` and `malicious` entries; `--filter suspicious` shows only `malicious` entries.
 
 ## Configuration
 

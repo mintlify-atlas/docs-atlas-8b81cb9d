@@ -97,7 +97,7 @@ sfsu slots into your existing Scoop workflow with minimal setup. Within a few mi
     # Open a package's homepage in your browser
     sfsu app home git
 
-    # List packages with available updates
+    # List packages with available updates (deprecated — use sfsu status)
     sfsu outdated
 
     # Show the dependency tree for a package
@@ -188,6 +188,7 @@ These flags work on every sfsu command:
 | `--verbose` / `-v` | Show additional detail in output |
 | `--no-color` | Disable terminal colour formatting |
 | `--arch` | Override target architecture (e.g. `x86_64`, `arm64`) |
+| `--global` / `-g` | Use the global Scoop context instead of the user context |
 | `--assume-yes` / `-y` | Answer "yes" to all interactive prompts |
 | `--disable-git` | Skip git operations; useful if git is not installed |
 | `--debug` | Enable debug-level logging |

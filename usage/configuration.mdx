@@ -250,10 +250,10 @@ sfsu and Scoop can use [aria2](https://aria2.github.io/) as the download back-en
 </ParamField>
 
 <ParamField body="aria2_warning_enabled" type="boolean" default="false">
-  When `true`, suppresses the warning message that Scoop displays while aria2 is downloading. Set to `false` (or leave unset) to see the warning.
+  When `true`, suppresses the progress/warning message that Scoop displays while aria2 is downloading. Leave unset or set to `false` to keep the download warning visible.
 
   ```json
-  { "aria2_warning_enabled": false }
+  { "aria2_warning_enabled": true }
   ```
 </ParamField>
 

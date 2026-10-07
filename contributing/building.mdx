@@ -1,7 +1,7 @@
 ---
-title: "Build sfsu from Source on Windows"
+title: "Building sfsu from Source: Windows Setup and Build Guide"
 sidebarTitle: "Building"
-description: "Set up a local sfsu development environment on Windows with Rust, Just, and PowerShell. Includes build commands, release targets, and benchmark instructions."
+description: "Set up an sfsu development environment on Windows with Rust, Just, and PowerShell. Covers build recipes, release targets, and Cargo feature flags."
 ---
 
 Building sfsu from source gives you access to the latest unreleased changes, lets you compile for specific architectures, and is a prerequisite for contributing code. The entire toolchain runs on Windows and relies on Rust's MSVC target, the Just task runner, and PowerShell as the shell. This guide walks through every step from a clean machine to a working binary.
@@ -59,7 +59,7 @@ Install all of the following before proceeding.
   <Step title="Locate the output binary">
     The compiled debug executable is placed at:
 
-    ```
+    ```text
     target\debug\sfsu.exe
     ```
 
@@ -132,7 +132,7 @@ just release-all
 
 The `just release-all` recipe first runs `just clean` (which removes and re-creates the `./release/` directory) before building each target in sequence. Output files follow the pattern:
 
-```
+```text
 release/
   sfsu-x86_64.exe
   dl-x86_64.7z

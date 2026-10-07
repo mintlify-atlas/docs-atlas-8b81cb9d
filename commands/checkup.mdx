@@ -92,7 +92,6 @@ Passing `--json` produces a structured object that is easy to consume in scripts
   "long_paths": "Enabled",
   "main_bucket": true,
   "windows_developer": false,
-  "windows_defender": false,
   "missing_helpers": [
     {
       "exe": "innounp",
@@ -128,9 +127,3 @@ Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'Long
 sfsu checkup
 ```
 
-<Note>
-  The Windows Defender exclusion check (whether the Scoop directory is
-  excluded from real-time scanning) requires Administrator elevation. When sfsu
-  is run as a standard user, the `windows_defender` field in JSON output is
-  always `false` and no Defender check is printed in human-readable mode.
-</Note>

@@ -54,15 +54,11 @@ Every sfsu subcommand — `search`, `status`, `bucket`, and the rest — accepts
 </ParamField>
 
 <ParamField query="--debug" type="bool" default="false">
-  Enables debug-level log messages. These messages are written to sfsu's log file and to stderr, and include internal state transitions, file paths resolved, and timing information. Intended for troubleshooting unexpected behaviour or reporting bugs.
+  Reserved flag for enabling debug-level logging. The flag is accepted by the parser but is not yet wired into the logger — use `--verbose` to enable detailed log output today. In debug builds of sfsu (compiled with `debug_assertions`), verbose logging is always active regardless of either flag.
 
   ```powershell
   sfsu status --debug
   ```
-
-  <Note>
-    In debug builds of sfsu (compiled with `debug_assertions`), debug logging is always enabled regardless of this flag.
-  </Note>
 </ParamField>
 
 <ParamField query="--disable-git" type="bool" default="false">
@@ -107,7 +103,7 @@ Every sfsu subcommand — `search`, `status`, `bucket`, and the rest — accepts
   | `32bit` | 32-bit x86 (i686). |
   | `arm64` | 64-bit ARM (AArch64). |
 
-  The default is the architecture of the machine running sfsu, which in the current release is always `64bit`.
+  The default is `64bit` — the `Architecture::ARCH` constant is compiled in as `x86_64` and does not change at runtime.
 
   ```powershell
   sfsu app info 7zip --arch 32bit
